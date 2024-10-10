@@ -13,12 +13,16 @@ const searchBarWidth = 300;
         </NuxtLink>
         <input type="text" placeholder="搜索" class="px-4 ml-auto" :style="{ maxWidth: searchBarWidth }" />
         <div class="pl-4 flex gap-2 items-center">
-            <button>
-                登录
-            </button>
-            <button>
-                注册
-            </button>
+            <NuxtLink to="/login">
+                <button>
+                    登录
+                </button>
+            </NuxtLink>
+            <NuxtLink to="/signup">
+                <button>
+                    注册
+                </button>
+            </NuxtLink>
         </div>
     </header>
 </template>
