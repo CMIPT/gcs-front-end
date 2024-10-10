@@ -1,7 +1,5 @@
 <template>
-    <div>
-        <GAppHeader />
-        <slot />
-        <GAppFooter />
-    </div>
+    <GAppHeader />
+    <slot />
+    <GAppFooter />
 </template>
