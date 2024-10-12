@@ -12,21 +12,30 @@ const router = useRouter()
 
 const handleLogin = async () => {
     const config = useRuntimeConfig()
-    await $fetch(`${config.public.apiBaseURL}/gcs/auth/signin`, {
-        'method': 'POST',
-        'body': JSON.stringify({ username: username.value, userPassword: userPassword.value }),
-        onResponse({ _, response }) {
-            if (response.status === 200) {
-                localStorage.setItem('Access-Token', response.headers.get('access-token'))
-                localStorage.setItem('Refresh-Token', response.headers.get('refresh-token'))
-                alert("登录成功，跳转到主页");
-                router.push('/');
+    try {
+        await $fetch(`${config.public.apiBaseURL}/gcs/auth/signin`, {
+            'method': 'POST',
+            'body': JSON.stringify({ username: username.value, userPassword: userPassword.value }),
+            onResponse({ _, response }) {
+                if (response.status === 200) {
+                    localStorage.setItem('Access-Token', response.headers.get('Access-Token'))
+                    localStorage.setItem('Refresh-Token', response.headers.get('Refresh-Token'))
+                    alert("登录成功，跳转到主页");
+                    router.push('/');
+                }
+                else if (response.status === 400) {
+                    alert('登录失败，请确认用户名和密码');
+                }
             }
-            else if (response.status === 400) {
-                alert('登录失败，请确认用户名和密码');
-            }
-        }
-    })
+        })
+    } catch (e) {
+        console.error(e)
+    }
+}
+
+const inputPasswordRef = ref(null);
+const handlePasswordFocus = () => {
+    inputPasswordRef.value?.focus()
 }
 </script>
 
@@ -36,9 +45,10 @@ const handleLogin = async () => {
             :style="{ width: loginWidth }">
             <h1 class="text-2xl text-center pb-4">登录</h1>
             <span>用户名</span>
-            <GInput type="text" v-model:model-value="username" />
+            <GInput type="text" v-model:model-value="username" @keyup.enter="handlePasswordFocus" />
             <span>密码</span>
-            <GInput type="password" v-model:model-value="userPassword" />
+            <GInput type="password" v-model:model-value="userPassword" @keyup.enter="handleLogin"
+                ref="inputPasswordRef" />
             <GButton class="ml-auto mt-4" @click="handleLogin">登录</GButton>
         </div>
     </div>
