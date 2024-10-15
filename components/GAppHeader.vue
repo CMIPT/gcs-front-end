@@ -8,22 +8,15 @@ const searchBarWidth = 300;
     <NuxtLink to="/">
       <Icon name="fa6-solid:code" />
     </NuxtLink>
-    <NuxtLink to="/">
-      <button class="px-4">GCS</button>
-    </NuxtLink>
-    <input
-      type="text"
-      placeholder="搜索"
-      class="px-4 ml-auto"
-      :style="{ maxWidth: searchBarWidth }"
-    />
-    <div class="pl-4 flex gap-2 items-center">
+    <NuxtLink to="/" class="ml-4"> GCS </NuxtLink>
+    <div class="pl-4 flex gap-2 items-center ml-auto">
       <NuxtLink to="/login">
-        <button>登录</button>
+        <AButton type="text">登录</AButton>
       </NuxtLink>
       <NuxtLink to="/signup">
-        <button>注册</button>
+        <AButton type="text">注册</AButton>
       </NuxtLink>
     </div>
   </header>
 </template>
+  
