@@ -5,7 +5,7 @@ export default defineNuxtConfig({
   modules: ['@nuxtjs/tailwindcss', '@nuxt/icon'],
   runtimeConfig: {
     public: {
-      apiBaseURL: "http://3.145.84.42:8080"
+      apiBaseURL: "http://150.158.12.130:8080"
     }
   }
 })
