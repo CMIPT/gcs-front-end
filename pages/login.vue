@@ -10,11 +10,12 @@ const userPassword = ref("");
 
 const router = useRouter();
 
-const userAuth = useState("userAuth", () => {});
+const userAuth = useState("userAuth");
 
 const handleLogin = async () => {
   const config = useRuntimeConfig();
   try {
+    Message.loading("正在登录...");
     await $fetch(`${config.public.apiBaseURL}/gcs/auth/signin`, {
       method: "POST",
       body: JSON.stringify({
@@ -27,10 +28,10 @@ const handleLogin = async () => {
             "access-token": response.headers.get("access-token"),
             "refresh-token": response.headers.get("refresh-token"),
           };
-          alert("登录成功，跳转到主页");
+          Message.success("登录成功，跳转到主页");
           router.push("/");
         } else if (response.status === 400) {
-          alert("登录失败，请确认用户名和密码");
+          Message.error("登录失败，请确认用户名和密码");
         }
       },
     });
@@ -38,34 +39,22 @@ const handleLogin = async () => {
     console.error(e);
   }
 };
-
-const inputPasswordRef = ref(null);
-const handlePasswordFocus = () => {
-  inputPasswordRef.value?.focus();
-};
 </script>
 
 <template>
   <div class="flex flex-col justify-center h-screen">
     <div
-      class="border border-slate-200 rounded-lg shadow-lg mx-auto flex flex-col gap-2 px-6 py-10"
+      class="border border-slate-200 rounded-lg shadow-lg mx-auto flex flex-col gap-2 px-6 pb-10"
       :style="{ width: loginWidth }"
     >
-      <h1 class="text-2xl text-center pb-4">登录</h1>
-      <span>用户名</span>
-      <GInput
-        type="text"
-        v-model:model-value="username"
-        @keyup.enter="handlePasswordFocus"
-      />
-      <span>密码</span>
-      <GInput
-        type="password"
-        v-model:model-value="userPassword"
-        @keyup.enter="handleLogin"
-        ref="inputPasswordRef"
-      />
-      <GButton class="ml-auto mt-4" @click="handleLogin">登录</GButton>
+      <ATypographyTitle class="text-center"> 登录 </ATypographyTitle>
+      <ATypographyText>用户名</ATypographyText>
+      <AInput type="text" v-model:model-value="username" />
+      <ATypographyText>密码</ATypographyText>
+      <AInput type="password" v-model:model-value="userPassword" />
+      <AButton class="ml-auto mt-4" @click="handleLogin" type="primary">
+        登录
+      </AButton>
     </div>
   </div>
 </template>
