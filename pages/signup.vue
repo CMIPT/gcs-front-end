@@ -5,57 +5,125 @@ definePageMeta({
 
 const signupWidth = "400px";
 
-const username = ref("");
-const userPassword = ref("");
-const email = ref("");
-const userPasswordConfirm = ref("");
-
 const router = useRouter();
 
-const handleSignup = async () => {
-  if (userPassword.value !== userPasswordConfirm.value) {
-    alert("两次密码输入不一致，请重新确认");
-    return;
-  }
-  const config = useRuntimeConfig();
-  await $fetch(`${config.public.apiBaseURL}/gcs/auth/signup`, {
-    method: "POST",
-    body: JSON.stringify({
-      username: username.value,
-      userPassword: userPassword.value,
-      email: email.value,
-    }),
-    onResponse({ _, response }) {
-      if (response.status === 200) {
-        alert("注册成功，跳转到登录页面");
-        router.push("/login");
-      }
-      if (response.status === 400) {
-        alert("注册失败，请检查用户名和密码");
+const userForm = reactive({
+  name: "",
+  email: "",
+  password: "",
+  confirmPassword: "",
+});
+
+const nameRules = [
+  {
+    validator: async (value, cb) => {
+      const config = useRuntimeConfig();
+      try {
+        const username = value ? value : "";
+        await $fetch(
+          `${config.public.apiBaseURL}/gcs/user/username?username=${username}`
+        );
+        cb();
+      } catch (error) {
+        cb("用户名已被注册");
       }
     },
-  });
+  },
+];
+
+const emailRules = [
+  {
+    validator: async (value, cb) => {
+      const config = useRuntimeConfig();
+      try {
+        const email = value ? value : "";
+        await $fetch(
+          `${config.public.apiBaseURL}/gcs/user/email?email=${email}`
+        );
+        cb();
+      } catch (error) {
+        cb("邮箱已被注册");
+      }
+    },
+  },
+];
+
+const passwordRules = [
+  {
+    validator: (value, cb) => {
+      if (userForm.password !== value) {
+        cb("两次输入密码不一致");
+      } else {
+        cb();
+      }
+    },
+  },
+];
+
+const handleSignup = async () => {
+  const config = useRuntimeConfig();
+  try {
+    Message.loading("正在注册...");
+    await $fetch(`${config.public.apiBaseURL}/gcs/auth/signup`, {
+      method: "POST",
+      body: JSON.stringify({
+        username: userForm.name,
+        userPassword: userForm.password,
+        email: userForm.email,
+      }),
+      onResponse({ _, response }) {
+        Message.clear();
+        if (response.status === 200) {
+          Message.success("注册成功，跳转到登录页面");
+          router.push("/login");
+        } else if (response.status === 400) {
+          const code = response._data["code"];
+          if (code === 7) {
+            Message.error("密码长度必须在6和20之间");
+          }
+        }
+      },
+    });
+  } catch (e) {
+    console.error(e);
+  }
 };
 </script>
 
 <template>
   <div class="flex flex-col justify-center h-screen">
-    <div
-      class="border border-slate-200 rounded-lg shadow-lg mx-auto flex flex-col gap-2 px-6 pb-10"
-      :style="{ width: signupWidth }"
-    >
-      <ATypographyTitle class="text-center pb-4">
-        注册
-      </ATypographyTitle>
-      <ATypographyText>用户名</ATypographyText>
-      <AInput v-model:model-value="username" />
-      <ATypographyText>邮箱</ATypographyText>
-      <AInput v-model:model-value="email" />
-      <ATypographyText>密码</ATypographyText>
-      <AInput type="password" v-model:model-value="userPassword" />
-      <ATypographyText>请确认密码</ATypographyText>
-      <AInput type="password" v-model:model-value="userPasswordConfirm" />
-      <AButton class="ml-auto mt-4" @click="handleSignup">注册</AButton>
+    <div class="border border-slate-200 rounded-lg shadow-lg mx-auto px-6">
+      <ATypographyTitle class="text-center">注册</ATypographyTitle>
+      <AForm
+        :model="userForm"
+        :style="{ width: signupWidth }"
+        layout="vertical"
+        @submit="handleSignup"
+      >
+        <AFormItem field="name" label="用户名" :rules="nameRules">
+          <AInput v-model="userForm.name" validate-trigger="blur" />
+        </AFormItem>
+        <AFormItem field="email" label="邮箱" :rules="emailRules">
+          <AInput v-model="userForm.email" validate-trigger="blur" />
+        </AFormItem>
+        <AFormItem field="password" label="密码">
+          <AInput v-model="userForm.password" type="password" />
+        </AFormItem>
+        <AFormItem
+          field="confirmPassword"
+          label="确认密码"
+          :rules="passwordRules"
+        >
+          <AInput
+            v-model="userForm.confirmPassword"
+            type="password"
+            validate-trigger="blur"
+          />
+        </AFormItem>
+        <AFormItem>
+          <AButton class="ml-auto" html-type="submit">登录</AButton>
+        </AFormItem>
+      </AForm>
     </div>
   </div>
 </template>
