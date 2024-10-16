@@ -1,4 +1,6 @@
 <script setup>
+import { APIPaths } from "~/utils";
+
 definePageMeta({
   layout: "login",
 });
@@ -20,12 +22,21 @@ const nameRules = [
       const config = useRuntimeConfig();
       try {
         const username = value ? value : "";
-        await $fetch(
-          `${config.public.apiBaseURL}/gcs/user/username?username=${username}`
-        );
+        const apiURL =
+          config.public.apiBaseURL +
+          APIPaths.USER_CHECK_USERNAME_VALIDITY_API_PATH +
+          `?username=${username}`;
+        await $fetch(apiURL);
         cb();
       } catch (error) {
-        cb("用户名已被注册");
+        const status = error.status;
+        if (status === HTTPStatusCode.INTERNAL_SERVER_ERROR) {
+          Message.error("服务器挂了...");
+          cb("");
+        } else if (status === HTTPStatusCode.BAD_REQUEST) {
+          const message = error.response._data["message"];
+          cb(message);
+        }
       }
     },
   },
@@ -42,7 +53,13 @@ const emailRules = [
         );
         cb();
       } catch (error) {
-        cb("邮箱已被注册");
+        const status = error.status;
+        if (status === HTTPStatusCode.INTERNAL_SERVER_ERROR) {
+          cb("服务器挂了...");
+        } else if (status === HTTPStatusCode.BAD_REQUEST) {
+          const message = error.response._data["message"];
+          cb(message);
+        }
       }
     },
   },
@@ -60,11 +77,20 @@ const passwordRules = [
   },
 ];
 
+const userFormRules = {
+  name: nameRules,
+  email: emailRules,
+  password: passwordRules,
+  confirmPassword: passwordRules,
+};
+
 const handleSignup = async () => {
   const config = useRuntimeConfig();
   try {
     Message.loading("正在注册...");
-    await $fetch(`${config.public.apiBaseURL}/gcs/auth/signup`, {
+    const apiURL =
+      config.public.apiBaseURL + APIPaths.AUTHENTICATION_SIGN_UP_API_PATH;
+    await $fetch(apiURL, {
       method: "POST",
       body: JSON.stringify({
         username: userForm.name,
@@ -73,14 +99,14 @@ const handleSignup = async () => {
       }),
       onResponse({ _, response }) {
         Message.clear();
-        if (response.status === 200) {
+        if (response.status === HTTPStatusCode.OK) {
           Message.success("注册成功，跳转到登录页面");
           router.push("/login");
-        } else if (response.status === 400) {
-          const code = response._data["code"];
-          if (code === 7) {
-            Message.error("密码长度必须在6和20之间");
-          }
+        } else if (response.status === HTTPStatusCode.BAD_REQUEST) {
+          // 理论上由于注册前会校验表单，这个分支应该进不来
+          Message.error("注册失败，请检查填写信息");
+        } else if (response.status === HTTPStatusCode.INTERNAL_SERVER_ERROR) {
+          Message.error("服务器挂了...");
         }
       },
     });
@@ -98,22 +124,19 @@ const handleSignup = async () => {
         :model="userForm"
         :style="{ width: signupWidth }"
         layout="vertical"
-        @submit="handleSignup"
+        @submit-success="handleSignup"
+        :rules="userFormRules"
       >
-        <AFormItem field="name" label="用户名" :rules="nameRules">
+        <AFormItem field="name" label="用户名">
           <AInput v-model="userForm.name" validate-trigger="blur" />
         </AFormItem>
-        <AFormItem field="email" label="邮箱" :rules="emailRules">
+        <AFormItem field="email" label="邮箱">
           <AInput v-model="userForm.email" validate-trigger="blur" />
         </AFormItem>
         <AFormItem field="password" label="密码">
           <AInput v-model="userForm.password" type="password" />
         </AFormItem>
-        <AFormItem
-          field="confirmPassword"
-          label="确认密码"
-          :rules="passwordRules"
-        >
+        <AFormItem field="confirmPassword" label="确认密码">
           <AInput
             v-model="userForm.confirmPassword"
             type="password"
