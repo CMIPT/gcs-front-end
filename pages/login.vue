@@ -1,4 +1,6 @@
 <script setup>
+import { APIPaths } from "~/utils";
+
 definePageMeta({
   layout: "login",
 });
@@ -18,7 +20,9 @@ const handleLogin = async () => {
   const config = useRuntimeConfig();
   try {
     Message.loading("正在登录...");
-    await $fetch(`${config.public.apiBaseURL}/gcs/auth/signin`, {
+    const apiURL =
+      config.public.apiBaseURL + APIPaths.AUTHENTICATION_SIGN_IN_API_PATH;
+    await $fetch(apiURL, {
       method: "POST",
       body: JSON.stringify({
         username: userForm.name,
@@ -26,14 +30,14 @@ const handleLogin = async () => {
       }),
       onResponse({ _, response }) {
         Message.clear();
-        if (response.status === 200) {
+        if (response.status === HTTPStatusCode.OK) {
           userAuth.value = {
             "access-token": response.headers.get("access-token"),
             "refresh-token": response.headers.get("refresh-token"),
           };
           Message.success("登录成功，跳转到主页");
           router.push("/");
-        } else if (response.status === 400) {
+        } else if (response.status === HTTPStatusCode.BAD_REQUEST) {
           Message.error("登录失败，请确认用户名和密码");
         }
       },
