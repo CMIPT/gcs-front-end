@@ -20,8 +20,10 @@ const handleLogin = async () => {
   const config = useRuntimeConfig();
   try {
     Message.loading("正在登录...");
-    const apiURL =
-      config.public.apiBaseURL + APIPaths.AUTHENTICATION_SIGN_IN_API_PATH;
+    const apiURL = new URL(
+      APIPaths.AUTHENTICATION_SIGN_IN_API_PATH,
+      config.public.apiBaseURL
+    );
     await $fetch(apiURL, {
       method: "POST",
       body: JSON.stringify({
@@ -37,8 +39,9 @@ const handleLogin = async () => {
           };
           Message.success("登录成功，跳转到主页");
           router.push("/");
-        } else if (response.status === HTTPStatusCode.BAD_REQUEST) {
-          Message.error("登录失败，请确认用户名和密码");
+        } else {
+          const message = response._data["message"];
+          Message.error(message);
         }
       },
     });
