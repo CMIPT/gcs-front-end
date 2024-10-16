@@ -22,21 +22,17 @@ const nameRules = [
       const config = useRuntimeConfig();
       try {
         const username = value ? value : "";
-        const apiURL =
-          config.public.apiBaseURL +
-          APIPaths.USER_CHECK_USERNAME_VALIDITY_API_PATH +
-          `?username=${username}`;
+        const apiURL = new URL(
+          APIPaths.USER_CHECK_USERNAME_VALIDITY_API_PATH,
+          config.public.apiBaseURL
+        );
+        apiURL.searchParams.append("username", username);
         await $fetch(apiURL);
         cb();
       } catch (error) {
-        const status = error.status;
-        if (status === HTTPStatusCode.INTERNAL_SERVER_ERROR) {
-          Message.error("服务器挂了...");
-          cb("");
-        } else if (status === HTTPStatusCode.BAD_REQUEST) {
-          const message = error.response._data["message"];
-          cb(message);
-        }
+        console.error(error);
+        const message = error.response._data["message"];
+        cb(message);
       }
     },
   },
@@ -48,18 +44,17 @@ const emailRules = [
       const config = useRuntimeConfig();
       try {
         const email = value ? value : "";
-        await $fetch(
-          `${config.public.apiBaseURL}/gcs/user/email?email=${email}`
+        const apiURL = new URL(
+          APIPaths.USER_CHECK_EMAIL_VALIDITY_API_PATH,
+          config.public.apiBaseURL
         );
+        apiURL.searchParams.append("email", email);
+        await $fetch(apiURL);
         cb();
       } catch (error) {
-        const status = error.status;
-        if (status === HTTPStatusCode.INTERNAL_SERVER_ERROR) {
-          cb("服务器挂了...");
-        } else if (status === HTTPStatusCode.BAD_REQUEST) {
-          const message = error.response._data["message"];
-          cb(message);
-        }
+        console.error(error);
+        const message = error.response._data["message"];
+        cb(message);
       }
     },
   },
@@ -88,8 +83,10 @@ const handleSignup = async () => {
   const config = useRuntimeConfig();
   try {
     Message.loading("正在注册...");
-    const apiURL =
-      config.public.apiBaseURL + APIPaths.AUTHENTICATION_SIGN_UP_API_PATH;
+    const apiURL = new URL(
+      APIPaths.AUTHENTICATION_SIGN_UP_API_PATH,
+      config.public.apiBaseURL
+    );
     await $fetch(apiURL, {
       method: "POST",
       body: JSON.stringify({
@@ -102,11 +99,9 @@ const handleSignup = async () => {
         if (response.status === HTTPStatusCode.OK) {
           Message.success("注册成功，跳转到登录页面");
           router.push("/login");
-        } else if (response.status === HTTPStatusCode.BAD_REQUEST) {
-          // 理论上由于注册前会校验表单，这个分支应该进不来
-          Message.error("注册失败，请检查填写信息");
-        } else if (response.status === HTTPStatusCode.INTERNAL_SERVER_ERROR) {
-          Message.error("服务器挂了...");
+        } else {
+          const message = response._data["message"];
+          Message.error(message);
         }
       },
     });
@@ -144,7 +139,7 @@ const handleSignup = async () => {
           />
         </AFormItem>
         <AFormItem>
-          <AButton class="ml-auto" html-type="submit">登录</AButton>
+          <AButton class="ml-auto" html-type="submit">注册</AButton>
         </AFormItem>
       </AForm>
     </div>
