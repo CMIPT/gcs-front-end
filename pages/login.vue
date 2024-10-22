@@ -34,8 +34,8 @@ const handleLogin = async () => {
         Message.clear();
         if (response.status === HTTPStatusCode.OK) {
           userAuth.value = {
-            "access-token": response.headers.get("access-token"),
-            "refresh-token": response.headers.get("refresh-token"),
+            accessToken: response.headers.get("access-token"),
+            refreshToken: response.headers.get("refresh-token"),
           };
           Message.success("登录成功，跳转到主页");
           router.push("/");
