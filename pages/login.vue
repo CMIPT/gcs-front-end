@@ -16,6 +16,8 @@ const userForm = reactive({
   password: "",
 });
 
+const userInfo = useState("userInfo");
+
 const handleLogin = async () => {
   const config = useRuntimeConfig();
   try {
@@ -37,6 +39,11 @@ const handleLogin = async () => {
             accessToken: response.headers.get("access-token"),
             refreshToken: response.headers.get("refresh-token"),
           };
+          userInfo.value = {
+            id: response._data["id"],
+            username: response._data["username"],
+            email: response._data["email"],
+          }
           Message.success("登录成功，跳转到主页");
           router.push("/");
         } else {
