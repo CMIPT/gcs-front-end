@@ -31,7 +31,7 @@ const newOptions = {
         <AButton type="text">注册</AButton>
       </NuxtLink>
     </div>
-    <div class="flex gap-4 items-center ml-auto">
+    <div class="flex gap-4 items-center ml-auto" v-if="userAuth?.accessToken">
       <ADropdown @select="handleNewOption">
         <AButton>
           <template #icon>
