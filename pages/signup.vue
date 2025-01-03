@@ -182,6 +182,8 @@ const handleSignup = async () => {
 };
 
 const handleGetVerificationCode = async () => {
+  // disable the button while sending the code
+  isCodeSent.value = true
   const config = useRuntimeConfig();
   try {
     Message.loading("正在发送验证码...");
@@ -196,7 +198,6 @@ const handleGetVerificationCode = async () => {
         Message.clear();
         if (response.status === HTTPStatusCode.OK) {
           Message.success("验证码发送成功");
-          isCodeSent.value = true;
           emailVerificationCodeCountdown.value = 60;
           const timer = setInterval(() => {
             emailVerificationCodeCountdown.value--;
