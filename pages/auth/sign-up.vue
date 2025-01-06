@@ -1,24 +1,27 @@
 <script setup lang="ts">
 import type { FieldRule } from "@arco-design/web-vue";
-import { reactive } from "vue"
 
-const signupWidth = '400px';
+const signupWidth = "400px";
+
+const router = useRouter();
 
 type SignUpForm = {
-  username: string,
-  password: string,
-  confirmPassword: string,
-  email: string,
-  verificationCode: string,
-}
+  username: string;
+  password: string;
+  confirmPassword: string;
+  email: string;
+  verificationCode: string;
+};
 
 type SignupFormState = {
-  username: boolean,
-  password: boolean,
-  confirmPassword: boolean,
-  email: boolean,
-  verificationCode: boolean,
-}
+  username: boolean;
+  password: boolean;
+  confirmPassword: boolean;
+  email: boolean;
+  verificationCode: boolean;
+  canResendCode: boolean;
+  resendCodeCountdown: number;
+};
 
 const form = reactive<SignUpForm>({
   username: "",
@@ -34,55 +37,59 @@ const formState = reactive<SignupFormState>({
   confirmPassword: false,
   email: false,
   verificationCode: false,
-})
+  canResendCode: true,
+  resendCodeCountdown: 0,
+});
 
 const usernameRules: FieldRule[] = [
   {
-    validator: async (value, cb) => {
+    validator: (value, cb) => {
       const username = value || "";
       const apiURL = new URL(
         APIPaths.USER_CHECK_USERNAME_VALIDITY_API_PATH,
         window.origin
       );
       apiURL.searchParams.append("username", username);
-      const { error } = await useFetch(apiURL.toString());
-      if (error.value?.status === HTTPStatusCode.OK) {
-        formState.username = true;
-        cb();
-      } else {
-        formState.username = false;
-        const message = error.value?.data["message"];
-        cb(message)
-      }
+      $fetch(apiURL.toString())
+        .then(() => {
+          formState.username = true;
+          cb();
+        })
+        .catch((error) => {
+          formState.username = false;
+          const message = error.value?.data["message"];
+          cb(message);
+        });
     },
   },
 ];
 
 const passwordRules: FieldRule[] = [
   {
-    validator: async (value, cb) => {
+    validator: (value, cb) => {
       const password = value || "";
       const apiURL = new URL(
         APIPaths.USER_CHECK_USER_PASSWORD_VALIDITY_API_PATH,
         window.origin
       );
       apiURL.searchParams.append("userPassword", password);
-      const { error } = await useFetch(apiURL.toString());
-      if (error.value?.status === HTTPStatusCode.OK) {
-        formState.password = true;
-        cb();
-      } else {
-        formState.password = false;
-        const message = error.value?.data["message"];
-        cb(message)
-      }
+      $fetch(apiURL.toString())
+        .then(() => {
+          formState.password = true;
+          cb();
+        })
+        .catch((error) => {
+          formState.password = false;
+          const message = error.value?.data["message"];
+          cb(message);
+        });
     },
   },
 ];
 
 const confirmPasswordRules: FieldRule[] = [
   {
-    validator: async (value, cb) => {
+    validator: (value, cb) => {
       if (form.password === value) {
         formState.confirmPassword = true;
         cb();
@@ -96,29 +103,31 @@ const confirmPasswordRules: FieldRule[] = [
 
 const emailRules: FieldRule[] = [
   {
-    validator: async (value, cb) => {
+    validator: (value, cb) => {
       const email = value ? value : "";
       const apiURL = new URL(
         APIPaths.USER_CHECK_EMAIL_VALIDITY_API_PATH,
         window.origin
       );
       apiURL.searchParams.append("email", email);
-      const { error } = await useFetch(apiURL.toString());
-      if (error.value?.status === HTTPStatusCode.OK) {
-        formState.email = true;
-        cb();
-      } else {
-        formState.email = false;
-        const message = error.value?.data["message"];
-        cb(message)
-      }
+      $fetch(apiURL.toString())
+        .then(() => {
+          formState.email = true;
+          cb();
+        })
+        .catch((error) => {
+          console.log(error);
+          formState.email = false;
+          const message = error.data["message"];
+          cb(message);
+        });
     },
   },
 ];
 
 const verificationCodeRules: FieldRule[] = [
   {
-    validator: async (value, cb) => {
+    validator: (value, cb) => {
       if (/^\d{6}$/.test(value)) {
         formState.verificationCode = true;
         cb();
@@ -138,35 +147,117 @@ const formRules = {
   verificationCode: verificationCodeRules,
 };
 
-const handleSubmit = () => {
+const isFormValid = computed(() => {
+  return (
+    formState.username &&
+    formState.password &&
+    formState.confirmPassword &&
+    formState.email &&
+    formState.verificationCode
+  );
+});
 
-}
-
+const handleGetVerificationCode = () => {
+  formState.canResendCode = false;
+  Message.loading("正在发送验证码...");
+  const apiURL = new URL(
+    APIPaths.AUTHENTICATION_SEND_EMAIL_VERIFICATION_CODE_API_PATH,
+    window.origin
+  );
+  apiURL.searchParams.append("email", form.email);
+  $fetch(apiURL.toString())
+    .then(() => {
+      Message.clear();
+      Message.success("验证码发送成功");
+      formState.resendCodeCountdown = 60;
+      const timer = setInterval(() => {
+        formState.resendCodeCountdown--;
+        if (formState.resendCodeCountdown-- <= 0) {
+          formState.canResendCode = true;
+          clearInterval(timer);
+        }
+      }, 1000);
+    })
+    .catch((error) => {
+      const message = error.data["message"];
+      Message.error(message);
+    });
+};
+const handleSignup = () => {
+  Message.loading("正在注册...");
+  const apiURL = new URL(
+    APIPaths.AUTHENTICATION_SIGN_UP_API_PATH,
+    window.origin
+  );
+  $fetch(apiURL.toString(), {
+    method: "POST",
+    body: JSON.stringify({
+      username: form.username,
+      userPassword: form.password,
+      email: form.email,
+      emailVerificationCode: form.verificationCode,
+    }),
+  })
+    .then(() => {
+      Message.clear();
+      Message.success("注册成功，跳转到登录页面");
+      router.push("/sign-in");
+    })
+    .catch((error) => {
+      const message = error.data["message"];
+      Message.error(message);
+    });
+};
 </script>
 
 <template>
   <div class="flex flex-col justify-center h-screen">
     <a-typography-title class="text-center">注册</a-typography-title>
     <div class="border border-slate-200 rounded-lg shadow-lg mx-auto p-8">
-      <a-form :model="form" :rules="formRules" :style="{ width: signupWidth }" layout="vertical" @submit="handleSubmit">
+      <a-form
+        :model="form"
+        :rules="formRules"
+        :style="{ width: signupWidth }"
+        layout="vertical"
+        @submit-success="handleSignup"
+      >
         <a-form-item field="username" label="用户名" validate-trigger="blur">
           <a-input v-model="form.username" placeholder="请输入用户名" />
         </a-form-item>
         <a-form-item field="password" label="密码" validate-trigger="blur">
           <a-input v-model="form.password" placeholder="请输入密码" />
         </a-form-item>
-        <a-form-item field="confirmPassword" label="确认密码" validate-trigger="blur">
-          <a-input v-model="form.confirmPassword" placeholder="请再一次确认密码" />
+        <a-form-item
+          field="confirmPassword"
+          label="确认密码"
+          validate-trigger="blur"
+        >
+          <a-input
+            v-model="form.confirmPassword"
+            placeholder="请再一次确认密码"
+          />
         </a-form-item>
-        <a-form-item field="email" label="邮箱">
-          <a-input v-model="form.email" placeholder="请输入邮箱" validate-trigger="blur" />
+        <a-form-item field="email" label="邮箱" validate-trigger="blur">
+          <a-input v-model="form.email" placeholder="请输入邮箱" />
         </a-form-item>
-        <a-form-item field="verificationCode" label="验证码" validate-trigger="blur">
+        <a-form-item field="verificationCode" label="验证码">
           <a-input v-model="form.verificationCode" :max-length="6" />
-          <a-button type="primary">获取验证码</a-button>
+          <a-button
+            type="primary"
+            :disabled="!formState.canResendCode || !formState.email"
+            @click="handleGetVerificationCode"
+          >
+            {{
+              formState.resendCodeCountdown > 0
+                ? `${formState.resendCodeCountdown}秒后重试`
+                : "获取验证码"
+            }}
+          </a-button>
         </a-form-item>
         <a-form-item>
-          <a-button html-type="submit">注册</a-button>
+          <a-button class="ml-auto" html-type="submit" :disabled="!isFormValid">
+            注册
+          </a-button>
         </a-form-item>
       </a-form>
     </div>
