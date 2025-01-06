@@ -116,7 +116,6 @@ const emailRules: FieldRule[] = [
           cb();
         })
         .catch((error) => {
-          console.log(error);
           formState.email = false;
           const message = error.data["message"];
           cb(message);
@@ -222,17 +221,17 @@ const handleSignup = () => {
         @submit-success="handleSignup"
       >
         <a-form-item field="username" label="用户名" validate-trigger="blur">
-          <a-input v-model="form.username" placeholder="请输入用户名" />
+          <a-input v-model="form.username" placeholder="请输入用户名"/>
         </a-form-item>
         <a-form-item field="password" label="密码" validate-trigger="blur">
-          <a-input v-model="form.password" placeholder="请输入密码" />
+          <a-input-password v-model="form.password" placeholder="请输入密码" />
         </a-form-item>
         <a-form-item
           field="confirmPassword"
           label="确认密码"
           validate-trigger="blur"
         >
-          <a-input
+          <a-input-password
             v-model="form.confirmPassword"
             placeholder="请再一次确认密码"
           />
