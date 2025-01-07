@@ -1,5 +1,6 @@
 <script setup lang="ts">
-
+const userAuth = useUserAuth()
+const userInfo = useUserInfo()
 </script>
 
 <template>
@@ -11,13 +12,20 @@
           <Icon name="fa6-solid:code" />
         </NuxtLink>
         <NuxtLink to="/" class="ml-4"> GCS </NuxtLink>
-        <div class="flex gap-2 items-center ml-auto">
+        <div class="flex gap-2 items-center ml-auto" v-if="!userAuth?.accessToken">
           <NuxtLink to="/auth/sign-in">
             <AButton type="text">登录</AButton>
           </NuxtLink>
           <NuxtLink to="/auth/sign-up">
             <AButton type="text">注册</AButton>
           </NuxtLink>
+        </div>
+        <div class="flex gap-2 items-center ml-auto" v-else>
+          <NuxtLink to="/new">
+            <a-button type="text">新建仓库</a-button>
+          </NuxtLink>
+          <a-divider direction="vertical" />
+          <a-typography-text>{{ userInfo.username }}</a-typography-text>
         </div>
       </div>
     </a-layout-header>
