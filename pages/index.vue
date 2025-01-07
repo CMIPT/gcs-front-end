@@ -1,6 +1,7 @@
 <script setup lang="ts">
 const userAuth = useUserAuth()
 const userInfo = useUserInfo()
+
 </script>
 
 <template>
@@ -21,7 +22,7 @@ const userInfo = useUserInfo()
           </NuxtLink>
         </div>
         <div class="flex gap-2 items-center ml-auto" v-else>
-          <NuxtLink to="/new">
+          <NuxtLink to="/repo/new">
             <a-button type="text">新建仓库</a-button>
           </NuxtLink>
           <a-divider direction="vertical" />
@@ -31,7 +32,6 @@ const userInfo = useUserInfo()
     </a-layout-header>
     <a-layout-content>
       <div class="text-center">
-        主页面
       </div>
     </a-layout-content>
     <a-layout-footer>
