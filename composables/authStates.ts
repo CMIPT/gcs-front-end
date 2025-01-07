@@ -1,11 +1,11 @@
 export type UserAuthState = {
-  accessToken: string;
-  refreshToken: string;
+  accessToken?: string;
+  refreshToken?: string;
 };
 
 export const useUserAuth = () => {
   return useState<UserAuthState>("userAuth", () => {
-    return { accessToken: "", refreshToken: "" };
+    return {};
   });
 };
 
