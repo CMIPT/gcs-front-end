@@ -19,6 +19,14 @@ const form = reactive<NewRepositoryForm>({
   isPrivate: false
 })
 
+type NewRepositoryFormState = {
+  name: boolean
+}
+
+const formState = reactive<NewRepositoryFormState>({
+  name: false
+})
+
 const nameRules: FieldRule[] = [{
   validator: async (value, cb) => {
     const repositoryName = value || ""
@@ -28,10 +36,16 @@ const nameRules: FieldRule[] = [{
     );
     apiURL.searchParams.append("repositoryName", repositoryName);
     apiURL.searchParams.append("userId", userInfo.value.id);
-    await $fetch(apiURL.toString()).catch((error) => {
-      const message = error.data["message"];
-      cb(message);
-    })
+    await $fetch(apiURL.toString())
+      .then(() => {
+        formState.name = true
+        cb()
+      })
+      .catch((error) => {
+        formState.name = false;
+        const message = error.data["message"];
+        cb(message);
+      })
   }
 }]
 
@@ -110,7 +124,7 @@ const handleNewRepository = () => {
       </a-form-item>
       <a-divider />
       <a-form-item>
-        <a-button class="ml-auto" type="primary" html-type="submit">
+        <a-button class="ml-auto" type="primary" html-type="submit" :disabled="!formState.name">
           创建仓库
         </a-button>
       </a-form-item>
