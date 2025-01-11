@@ -1,6 +1,8 @@
 <script setup lang="ts">
 import type { FieldRule } from "@arco-design/web-vue";
 
+const formRef = ref()
+
 const signupWidth = "400px";
 
 const router = useRouter();
@@ -43,44 +45,44 @@ const formState = reactive<SignupFormState>({
 
 const usernameRules: FieldRule[] = [
   {
-    validator: (value, cb) => {
+    validator: async (value, cb) => {
       const username = value || "";
       const apiURL = new URL(
         APIPaths.USER_CHECK_USERNAME_VALIDITY_API_PATH,
         window.origin
       );
       apiURL.searchParams.append("username", username);
-      $fetch(apiURL.toString())
-        .then(() => {
-          formState.username = true;
-          cb();
-        })
+      await $fetch(apiURL.toString())
+        .then(() => { formState.username = true; cb() })
         .catch((error) => {
           formState.username = false;
-          const message = error.value?.data["message"];
+          const message = error.data["message"];
           cb(message);
-        });
+        })
     },
   },
 ];
 
 const passwordRules: FieldRule[] = [
   {
-    validator: (value, cb) => {
+    validator: async (value, cb) => {
       const password = value || "";
       const apiURL = new URL(
         APIPaths.USER_CHECK_USER_PASSWORD_VALIDITY_API_PATH,
         window.origin
       );
       apiURL.searchParams.append("userPassword", password);
-      $fetch(apiURL.toString())
+      await $fetch(apiURL.toString())
         .then(() => {
           formState.password = true;
-          cb();
+          cb()
+          if (form.confirmPassword) {
+            formRef.value?.validateField('confirmPassword')
+          }
         })
         .catch((error) => {
           formState.password = false;
-          const message = error.value?.data["message"];
+          const message = error.data["message"];
           cb(message);
         });
     },
@@ -90,20 +92,19 @@ const passwordRules: FieldRule[] = [
 const confirmPasswordRules: FieldRule[] = [
   {
     validator: (value, cb) => {
-      if (form.password === value) {
-        formState.confirmPassword = true;
-        cb();
-      } else {
+      if (value && form.password && value !== form.password) {
         formState.confirmPassword = false;
         cb("两次输入密码不一致");
+        return;
       }
+      cb()
     },
   },
 ];
 
 const emailRules: FieldRule[] = [
   {
-    validator: (value, cb) => {
+    validator: async (value, cb) => {
       const email = value ? value : "";
       const apiURL = new URL(
         APIPaths.USER_CHECK_EMAIL_VALIDITY_API_PATH,
@@ -200,7 +201,7 @@ const handleSignup = () => {
     .then(() => {
       Message.clear();
       Message.success("注册成功，跳转到登录页面");
-      router.push("/sign-in");
+      router.push("/auth/sign-in");
     })
     .catch((error) => {
       const message = error.data["message"];
@@ -213,39 +214,24 @@ const handleSignup = () => {
   <div class="flex flex-col justify-center h-screen">
     <a-typography-title class="text-center">注册</a-typography-title>
     <div class="border border-slate-200 rounded-lg shadow-lg mx-auto p-8">
-      <a-form
-        :model="form"
-        :rules="formRules"
-        :style="{ width: signupWidth }"
-        layout="vertical"
-        @submit-success="handleSignup"
-      >
+      <a-form :model="form" :rules="formRules" :style="{ width: signupWidth }" layout="vertical" ref="formRef"
+        @submit-success="handleSignup">
         <a-form-item field="username" label="用户名" validate-trigger="blur">
-          <a-input v-model="form.username" placeholder="请输入用户名"/>
+          <a-input v-model="form.username" placeholder="请输入用户名" />
         </a-form-item>
         <a-form-item field="password" label="密码" validate-trigger="blur">
           <a-input-password v-model="form.password" placeholder="请输入密码" />
         </a-form-item>
-        <a-form-item
-          field="confirmPassword"
-          label="确认密码"
-          validate-trigger="blur"
-        >
-          <a-input-password
-            v-model="form.confirmPassword"
-            placeholder="请再一次确认密码"
-          />
+        <a-form-item field="confirmPassword" label="确认密码" validate-trigger="blur">
+          <a-input-password v-model="form.confirmPassword" placeholder="请再一次确认密码" />
         </a-form-item>
         <a-form-item field="email" label="邮箱" validate-trigger="blur">
           <a-input v-model="form.email" placeholder="请输入邮箱" />
         </a-form-item>
         <a-form-item field="verificationCode" label="验证码">
           <a-input v-model="form.verificationCode" :max-length="6" />
-          <a-button
-            type="primary"
-            :disabled="!formState.canResendCode || !formState.email"
-            @click="handleGetVerificationCode"
-          >
+          <a-button type="primary" :disabled="!formState.canResendCode || !formState.email"
+            @click="handleGetVerificationCode">
             {{
               formState.resendCodeCountdown > 0
                 ? `${formState.resendCodeCountdown}秒后重试`
