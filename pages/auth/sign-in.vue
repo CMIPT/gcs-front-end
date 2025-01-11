@@ -53,12 +53,7 @@ const handleSignin = async () => {
   <div class="flex flex-col justify-center h-screen">
     <a-typography-title class="text-center">登录</a-typography-title>
     <div class="border border-slate-200 rounded-lg shadow-lg mx-auto p-8">
-      <a-form
-        :model="form"
-        :style="{ width: signinWidth }"
-        layout="vertical"
-        @submit="handleSignin"
-      >
+      <a-form :model="form" :style="{ width: signinWidth }" layout="vertical" @submit="handleSignin">
         <a-form-item field="username" label="用户名">
           <a-input v-model="form.username" />
         </a-form-item>
