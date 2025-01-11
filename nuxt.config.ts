@@ -9,7 +9,7 @@ export default defineNuxtConfig({
   ],
   routeRules: {
     "/api/**": {
-      proxy: "http://18.220.59.58:8080/**"
+      proxy: "http://112.124.69.119:8080/**"
     }
   }
 })
