@@ -7,9 +7,9 @@ export default defineNuxtConfig({
     '@nuxt/icon',
     'arco-design-nuxt-module'
   ],
-  runtimeConfig: {
-    public: {
-      apiBaseURL: "http://18.220.59.58:8080"
+  routeRules: {
+    "/api/**": {
+      proxy: "http://112.124.69.119:8080/**"
     }
   }
 })
