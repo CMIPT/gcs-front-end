@@ -5,13 +5,15 @@ const userAuth = useUserAuth();
 const userInfo = useUserInfo();
 
 type UserRepositoryResponse = {
+  id: string;
   repositoryDescription: string;
   repositoryName: string;
   star: number;
-  userId: number;
+  userId: string;
 };
 
 type UserRepository = {
+  id: string;
   description: string;
   name: string;
   star: number;
@@ -19,8 +21,11 @@ type UserRepository = {
 };
 
 const userRepositoryList = ref<UserRepository[]>([]);
+const total = ref(0);
+const currentPage = ref(1);
+const defaultPageSize = ref(1);
 
-onMounted(async () => {
+const fetchRepositories = async (page: number) => {
   if (!userInfo.value.id) {
     // 还没有登录状态时不查询仓库列表
     return;
@@ -30,29 +35,37 @@ onMounted(async () => {
     window.origin
   );
   apiURL.searchParams.append("id", userInfo.value.id);
-  apiURL.searchParams.append("page", "1");
-  apiURL.searchParams.append("size", "10");
-  const data: UserRepositoryResponse[] = await $fetch(apiURL.toString(), {
+  apiURL.searchParams.append("page", page.toString());
+  apiURL.searchParams.append("size", defaultPageSize.value.toString());
+  const response = await $fetch(apiURL.toString(), {
     headers: {
       "Access-Token": userAuth.value.accessToken || "",
     },
   });
-  for (let i = 0; i < data.length; i++) {
-    const repo = data[i];
-    userRepositoryList.value.push({
-      description: repo.repositoryDescription,
-      name: repo.repositoryName,
-      star: repo.star,
-      // TODO: 暂时为用户ID
-      ownerName: repo.userId.toString(),
-    });
-  }
+  const records = response.records as UserRepositoryResponse[];
+  total.value = response.total;
+  userRepositoryList.value = records.map(repo => ({
+    id: repo.id,
+    description: repo.repositoryDescription,
+    name: repo.repositoryName,
+    star: repo.star,
+    ownerName: repo.username,
+  }));
+};
+
+onMounted(async () => {
+    fetchRepositories(currentPage.value);
 });
 
 const paginationProps = computed(() => {
   return {
-    defaultPageSize: 10,
-    total: userRepositoryList.value.length,
+    defaultPageSize: defaultPageSize.value,
+    total: total.value,
+    current: currentPage.value,
+    onChange: (page: number) => {
+      currentPage.value = page;
+      fetchRepositories(page);
+    },
   };
 });
 </script>
@@ -83,6 +96,9 @@ const paginationProps = computed(() => {
           <NuxtLink to="/repo/new">
             <a-button type="text">新建仓库</a-button>
           </NuxtLink>
+                      <NuxtLink to="/settings/profile">
+                      Avatar
+                      </NuxtLink>
           <a-divider direction="vertical" />
           <a-typography-text>{{ userInfo.username }}</a-typography-text>
         </div>
@@ -97,17 +113,19 @@ const paginationProps = computed(() => {
           :pagination-props="paginationProps"
         >
           <template #item="{ item }">
-            <a-list-item class="list-demo-item" action-layout="vertical">
-              <a-list-item-meta
-                :title="`${item.ownerName}/${item.name}`"
-                :description="item.description"
-              >
-                <template #avatar>
-                  <!-- TODO: 用户头像 -->
-                  Avatar
-                </template>
-              </a-list-item-meta>
-            </a-list-item>
+            <NuxtLink :to="`/${item.ownerName}/${item.name}`">
+              <a-list-item class="list-demo-item" action-layout="vertical">
+                  <a-list-item-meta
+                      :title="`${item.ownerName}/${item.name}`"
+                      :description="item.description"
+                  >
+                    <template #avatar>
+                      <!-- TODO: 用户头像 -->
+                      Avatar
+                    </template>
+                  </a-list-item-meta>
+              </a-list-item>
+            </NuxtLink>
           </template>
         </a-list>
       </div>
