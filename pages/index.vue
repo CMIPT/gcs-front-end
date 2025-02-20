@@ -31,7 +31,7 @@ const fetchRepositories = async (page: number) => {
     return;
   }
   const apiURL = new URL(
-    APIPaths.USER_PAGE_USER_REPOSITORY_API_PATH,
+    APIPaths.REPOSITORY_PAGE_REPOSITORY_API_PATH,
     window.origin
   );
   apiURL.searchParams.append("id", userInfo.value.id);
