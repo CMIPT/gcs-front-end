@@ -97,6 +97,7 @@ const confirmPasswordRules: FieldRule[] = [
         cb("两次输入密码不一致");
         return;
       }
+        formState.confirmPassword = true;
       cb()
     },
   },

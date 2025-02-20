@@ -17,6 +17,7 @@ export const APIPaths = {
   SSH_KEY_UPDATE_SSH_KEY_API_PATH: "/api/gcs/ssh/update",
   USER_PAGE_USER_REPOSITORY_API_PATH: "/api/gcs/user/page/repository",
   SSH_KEY_DELETE_SSH_KEY_API_PATH: "/api/gcs/ssh/delete",
+  REPOSITORY_GET_REPOSITORY_API_PATH: "/api/gcs/repository/get",
   REPOSITORY_REMOVE_COLLABORATION_API_PATH: "/api/gcs/repository/remove-collaborator",
   AUTHENTICATION_SEND_EMAIL_VERIFICATION_CODE_API_PATH: "/api/gcs/auth/send-email-verification-code",
   REPOSITORY_CREATE_REPOSITORY_API_PATH: "/api/gcs/repository/create",
