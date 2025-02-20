@@ -23,7 +23,7 @@ type UserRepository = {
 const userRepositoryList = ref<UserRepository[]>([]);
 const total = ref(0);
 const currentPage = ref(1);
-const defaultPageSize = ref(1);
+const defaultPageSize = ref(10);
 
 const fetchRepositories = async (page: number) => {
   if (!userInfo.value.id) {
