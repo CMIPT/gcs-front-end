@@ -112,7 +112,7 @@ const emailRules: FieldRule[] = [
         window.origin
       );
       apiURL.searchParams.append("email", email);
-      $fetch(apiURL.toString())
+      await $fetch(apiURL.toString())
         .then(() => {
           formState.email = true;
           cb();
