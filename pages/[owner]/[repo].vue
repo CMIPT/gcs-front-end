@@ -84,9 +84,32 @@ const toggleCodeDropdown = () => {
 };
 
 const copyToClipboard = (text: string) => {
-  navigator.clipboard.writeText(text).then(() => {
-    Message.success({ content: 'Copied to clipboard!' });
-  });
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    navigator.clipboard.writeText(text).then(() => {
+      Message.success({ content: '复制成功!' });
+    }).catch(err => {
+      Message.error({ content: '复制失败，请重试。' });
+    });
+  } else {
+    // Fallback method for older browsers
+    const textarea = document.createElement('textarea');
+    textarea.value = text;
+    textarea.style.position = 'fixed';  // Prevent scrolling to bottom of page in MS Edge.
+    document.body.appendChild(textarea);
+    textarea.focus();
+    textarea.select();
+    try {
+      const successful = document.execCommand('copy');
+      if (successful) {
+        Message.success({ content: '复制成功！' });
+      } else {
+        Message.error({ content: '复制失败，请重试。' });
+      }
+    } catch (err) {
+      Message.error({ content: '复制失败，请重试。' });
+    }
+    document.body.removeChild(textarea);
+  }
 };
 
 const toggleBranches = () => {
