@@ -60,7 +60,7 @@ const sshKeyRules: FieldRule[] = [
     validator: async (value, cb) => {
       const publicKey = value || '';
       const apiURL = new URL(
-        APIPaths.SSH_KEY_CHECK_SSH_KEY_PUBLICKEY_VALIDITY_API_PATH,
+        APIPaths.SSH_KEY_CHECK_SSH_KEY_PUBLIC_KEY_VALIDITY_API_PATH,
         window.origin
       );
       apiURL.searchParams.append('publicKey', publicKey);

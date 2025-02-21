@@ -28,7 +28,7 @@ export const APIPaths = {
   DEVELOPMENT_GET_ERROR_MESSAGE_API_PATH: "/api/developer/error",
   DEVELOPMENT_GET_API_MAP_API_PATH: "/api/developer/api",
   SSH_KEY_CHECK_SSH_KEY_NAME_VALIDITY_API_PATH: "/api/ssh/ssh-key-name",
-  SSH_KEY_CHECK_SSH_KEY_PUBLICKEY_VALIDITY_API_PATH: "/api/ssh/ssh-key-publickey",
+  SSH_KEY_CHECK_SSH_KEY_PUBLIC_KEY_VALIDITY_API_PATH: "/api/ssh/ssh-key-publickey",
 };
 
 export const APIErrorCodes = {
