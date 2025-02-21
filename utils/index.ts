@@ -1,9 +1,11 @@
 export const APIPaths = {
-  USER_UPDATE_USER_PASSWORD_WITH_OLD_PASSWORD_API_PATH: "/api/user/update-password-with-old-password",
+  USER_UPDATE_USER_PASSWORD_WITH_OLD_PASSWORD_API_PATH:
+    "/api/user/update-password-with-old-password",
   USER_GET_USER_API_PATH: "/api/user/get",
   REPOSITORY_PAGE_REPOSITORY_API_PATH: "/api/repository/page",
   REPOSITORY_ADD_COLLABORATOR_API_PATH: "/api/repository/add-collaborator",
-  REPOSITORY_CHECK_REPOSITORY_NAME_VALIDITY_API_PATH: "/api/repository/repository-name",
+  REPOSITORY_CHECK_REPOSITORY_NAME_VALIDITY_API_PATH:
+    "/api/repository/repository-name",
   USER_CHECK_USERNAME_VALIDITY_API_PATH: "/api/user/username",
   USER_DELETE_USER_API_PATH: "/api/user/delete",
   REPOSITORY_UPDATE_REPOSITORY_API_PATH: "/api/repository/update",
@@ -18,17 +20,21 @@ export const APIPaths = {
   SSH_KEY_UPDATE_SSH_KEY_API_PATH: "/api/ssh/update",
   SSH_KEY_DELETE_SSH_KEY_API_PATH: "/api/ssh/delete",
   REPOSITORY_GET_REPOSITORY_API_PATH: "/api/repository/get",
-  REPOSITORY_REMOVE_COLLABORATION_API_PATH: "/api/repository/remove-collaborator",
-  AUTHENTICATION_SEND_EMAIL_VERIFICATION_CODE_API_PATH: "/api/auth/send-email-verification-code",
+  REPOSITORY_REMOVE_COLLABORATION_API_PATH:
+    "/api/repository/remove-collaborator",
+  AUTHENTICATION_SEND_EMAIL_VERIFICATION_CODE_API_PATH:
+    "/api/auth/send-email-verification-code",
   REPOSITORY_CREATE_REPOSITORY_API_PATH: "/api/repository/create",
   SSH_KEY_PAGE_SSH_KEY_API_PATH: "/api/ssh/page",
   AUTHENTICATION_REFRESH_API_PATH: "/api/auth/refresh",
   USER_CHECK_EMAIL_VALIDITY_API_PATH: "/api/user/email",
-  USER_UPDATE_USER_PASSWORD_WITH_EMAIL_VERIFICATION_CODE_API_PATH: "/api/user/update-password-with-email-verification-code",
+  USER_UPDATE_USER_PASSWORD_WITH_EMAIL_VERIFICATION_CODE_API_PATH:
+    "/api/user/update-password-with-email-verification-code",
   DEVELOPMENT_GET_ERROR_MESSAGE_API_PATH: "/api/developer/error",
   DEVELOPMENT_GET_API_MAP_API_PATH: "/api/developer/api",
   SSH_KEY_CHECK_SSH_KEY_NAME_VALIDITY_API_PATH: "/api/ssh/ssh-key-name",
-  SSH_KEY_CHECK_SSH_KEY_PUBLIC_KEY_VALIDITY_API_PATH: "/api/ssh/ssh-key-publickey",
+  SSH_KEY_CHECK_SSH_KEY_PUBLIC_KEY_VALIDITY_API_PATH:
+    "/api/ssh/ssh-key-publickey",
 };
 
 export const APIErrorCodes = {
