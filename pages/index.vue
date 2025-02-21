@@ -9,7 +9,7 @@ type UserRepositoryResponse = {
   repositoryDescription: string;
   repositoryName: string;
   star: number;
-  userId: string;
+  username: string;
 };
 
 type UserRepository = {
@@ -32,7 +32,7 @@ const fetchRepositories = async (page: number) => {
   }
   const apiURL = new URL(
     APIPaths.REPOSITORY_PAGE_REPOSITORY_API_PATH,
-    window.origin
+    window.origin,
   );
   apiURL.searchParams.append("id", userInfo.value.id);
   apiURL.searchParams.append("page", page.toString());
@@ -44,7 +44,7 @@ const fetchRepositories = async (page: number) => {
   });
   const records = response.records as UserRepositoryResponse[];
   total.value = response.total;
-  userRepositoryList.value = records.map(repo => ({
+  userRepositoryList.value = records.map((repo) => ({
     id: repo.id,
     description: repo.repositoryDescription,
     name: repo.repositoryName,
@@ -54,7 +54,7 @@ const fetchRepositories = async (page: number) => {
 };
 
 onMounted(async () => {
-    fetchRepositories(currentPage.value);
+  fetchRepositories(currentPage.value);
 });
 
 const paginationProps = computed(() => {
@@ -96,9 +96,7 @@ const paginationProps = computed(() => {
           <NuxtLink to="/repo/new">
             <a-button type="text">新建仓库</a-button>
           </NuxtLink>
-                      <NuxtLink to="/settings/profile">
-                      Avatar
-                      </NuxtLink>
+          <NuxtLink to="/settings/profile"> Avatar </NuxtLink>
           <a-divider direction="vertical" />
           <a-typography-text>{{ userInfo.username }}</a-typography-text>
         </div>
@@ -115,15 +113,15 @@ const paginationProps = computed(() => {
           <template #item="{ item }">
             <NuxtLink :to="`/${item.ownerName}/${item.name}`">
               <a-list-item class="list-demo-item" action-layout="vertical">
-                  <a-list-item-meta
-                      :title="`${item.ownerName}/${item.name}`"
-                      :description="item.description"
-                  >
-                    <template #avatar>
-                      <!-- TODO: 用户头像 -->
-                      Avatar
-                    </template>
-                  </a-list-item-meta>
+                <a-list-item-meta
+                  :title="`${item.ownerName}/${item.name}`"
+                  :description="item.description"
+                >
+                  <template #avatar>
+                    <!-- TODO: 用户头像 -->
+                    Avatar
+                  </template>
+                </a-list-item-meta>
               </a-list-item>
             </NuxtLink>
           </template>
