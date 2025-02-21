@@ -41,7 +41,11 @@ const sshNameRules: FieldRule[] = [
         window.origin
       );
       apiURL.searchParams.append('name', name);
-      await $fetch(apiURL.toString())
+      await $fetch(apiURL.toString(), {
+        headers: {
+          "Access-Token": userAuth.value.accessToken || "",
+        },
+      })
         .then(() => {
           formState.name = true;
           cb();
@@ -64,7 +68,11 @@ const sshKeyRules: FieldRule[] = [
         window.origin
       );
       apiURL.searchParams.append('publicKey', publicKey);
-      await $fetch(apiURL.toString())
+      await $fetch(apiURL.toString(), {
+        headers: {
+          "Access-Token": userAuth.value.accessToken || "",
+        },
+      })
         .then(() => {
           formState.publicKey = true;
           cb();
