@@ -1,7 +1,7 @@
 <script setup lang="ts">
-import type { FieldRule } from "@arco-design/web-vue";
+import { type FormInstance, type FieldRule } from "@arco-design/web-vue";
 
-const formRef = ref()
+const formRef = ref<FormInstance>()
 
 const signupWidth = "400px";
 

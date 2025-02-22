@@ -1,79 +1,88 @@
 <script setup lang="ts">
-import type { FieldRule } from '@arco-design/web-vue';
+import type { FieldRule } from "@arco-design/web-vue";
 
-const formMaxWidth = '1000px'
+const formMaxWidth = "1000px";
 
 type NewRepositoryForm = {
-  name: string,
-  description: string,
-  isPrivate: boolean,
-}
+  name: string;
+  description: string;
+  isPrivate: boolean;
+};
 
-const userAuth = useUserAuth()
-const userInfo = useUserInfo()
-const router = useRouter()
+const userInfo = useUserInfo();
+const router = useRouter();
 
 const form = reactive<NewRepositoryForm>({
   name: "",
   description: "",
-  isPrivate: false
-})
+  isPrivate: false,
+});
 
 type NewRepositoryFormState = {
-  name: boolean
-}
+  name: boolean;
+};
 
 const formState = reactive<NewRepositoryFormState>({
-  name: false
-})
+  name: false,
+});
 
-const nameRules: FieldRule[] = [{
-  validator: async (value, cb) => {
-    const repositoryName = value || ""
-    const apiURL = new URL(
-      APIPaths.REPOSITORY_CHECK_REPOSITORY_NAME_VALIDITY_API_PATH,
-      window.origin
-    );
-    apiURL.searchParams.append("repositoryName", repositoryName);
-    apiURL.searchParams.append("userId", userInfo.value.id);
-    await $fetch(apiURL.toString())
-      .then(() => {
-        formState.name = true
-        cb()
-      })
-      .catch((error) => {
-        formState.name = false;
-        const message = error.data["message"];
-        cb(message);
-      })
-  }
-}]
+const nameRules: FieldRule[] = [
+  {
+    validator: async (value, cb) => {
+      const repositoryName = value || "";
+      const apiURL = new URL(
+        APIPaths.REPOSITORY_CHECK_REPOSITORY_NAME_VALIDITY_API_PATH,
+        window.origin,
+      );
+      apiURL.searchParams.append("repositoryName", repositoryName);
+      apiURL.searchParams.append("userId", userInfo.value.id);
+      await fetchWithRetry(apiURL.toString())
+        .then(() => {
+          formState.name = true;
+          cb();
+        })
+        .catch((error) => {
+          formState.name = false;
+          const message = error.data["message"];
+          cb(message);
+        });
+    },
+  },
+];
 
 const formRules = {
-  name: nameRules
-}
+  name: nameRules,
+};
 
-const handleNewRepository = () => {
+onMounted(async () => {
+  await initialize();
+  if (!userInfo.value.id) {
+    router.push("/");
+  }
+});
+
+const handleNewRepository = async () => {
   Message.loading({ id: "new-repository", content: "正在新建仓库..." });
   const apiURL = new URL(
     APIPaths.REPOSITORY_CREATE_REPOSITORY_API_PATH,
-    window.origin
+    window.origin,
   );
-  $fetch(apiURL.toString(), {
+  await fetchWithRetry(apiURL.toString(), {
     method: "POST",
     body: JSON.stringify({
       repositoryName: form.name,
       repositoryDescription: form.description,
       isPrivate: form.isPrivate,
     }),
-    headers: {
-      "access-token": userAuth.value?.accessToken || "",
-    },
   })
     .then(() => {
-      Message.success({ id: "new-repository", content: "创建成功，跳转到主页" });
+      Message.success({
+        id: "new-repository",
+        content: "创建成功，跳转到主页",
+      });
       router.push("/");
-    }).catch((error) => {
+    })
+    .catch((error) => {
       const message = error.data["message"];
       Message.error({ id: "new-repository", content: message });
     });
@@ -83,8 +92,13 @@ const handleNewRepository = () => {
 <template>
   <div class="flex flex-col items-center mx-auto my-10">
     <a-typography-title :heading="2"> 新建仓库 </a-typography-title>
-    <a-form :model="form" layout="vertical" :rules="formRules" :style="{ maxWidth: formMaxWidth }"
-      @submit-success="handleNewRepository">
+    <a-form
+      :model="form"
+      layout="vertical"
+      :rules="formRules"
+      :style="{ maxWidth: formMaxWidth }"
+      @submit-success="handleNewRepository"
+    >
       <a-form-item field="name" label="仓库名">
         <a-input v-model="form.name" />
       </a-form-item>
@@ -124,7 +138,12 @@ const handleNewRepository = () => {
       </a-form-item>
       <a-divider />
       <a-form-item>
-        <a-button class="ml-auto" type="primary" html-type="submit" :disabled="!formState.name">
+        <a-button
+          class="ml-auto"
+          type="primary"
+          html-type="submit"
+          :disabled="!formState.name"
+        >
           创建仓库
         </a-button>
       </a-form-item>
