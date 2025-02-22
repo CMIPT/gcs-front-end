@@ -1,3 +1,5 @@
+import type { UserVO } from "./responseVOTypes";
+
 export type UserAuthState = {
   accessToken?: string;
   refreshToken?: string;
@@ -9,14 +11,8 @@ export const useUserAuth = () => {
   });
 };
 
-export type UserInfoState = {
-  id: string;
-  username: string;
-  email: string;
-};
-
 export const useUserInfo = () => {
-  return useState<UserInfoState>("userInfo", () => {
+  return useState<UserVO>("userInfo", () => {
     return { id: "", username: "", email: "" };
   });
 };

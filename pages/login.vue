@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import type { UserVO } from '~/composables/responseVOTypes';
+
 const signinWidth = "300px";
 const router = useRouter();
 
@@ -29,11 +31,13 @@ const handleSignin = async () => {
         userPassword: form.password,
       }),
     });
+    const accessToken = resp.headers.get("access-token")
+    const refreshToken = resp.headers.get("refresh-token")
     userAuth.value = {
-      accessToken: resp.headers.get("access-token") || "",
-      refreshToken: resp.headers.get("refresh-token") || "",
+      accessToken: accessToken,
+      refreshToken: refreshToken,
     };
-    const data = resp._data as UserInfoState;
+    const data = resp._data as UserVO;
     userInfo.value = {
       id: data.id,
       username: data.username,
