@@ -85,15 +85,15 @@ const paginationProps = computed(() => {
           class="flex gap-2 items-center ml-auto"
           v-if="!userAuth?.accessToken"
         >
-          <NuxtLink to="/auth/sign-in">
+          <NuxtLink to="/login">
             <AButton type="text">登录</AButton>
           </NuxtLink>
-          <NuxtLink to="/auth/sign-up">
+          <NuxtLink to="/signup">
             <AButton type="text">注册</AButton>
           </NuxtLink>
         </div>
         <div class="flex gap-2 items-center ml-auto" v-else>
-          <NuxtLink to="/repo/new">
+          <NuxtLink to="/new">
             <a-button type="text">新建仓库</a-button>
           </NuxtLink>
           <NuxtLink to="/settings/profile"> Avatar </NuxtLink>
