@@ -202,7 +202,7 @@ const handleSignup = () => {
     .then(() => {
       Message.clear();
       Message.success("注册成功，跳转到登录页面");
-      router.push("/auth/sign-in");
+      router.push("/login");
     })
     .catch((error) => {
       const message = error.data["message"];
@@ -249,3 +249,4 @@ const handleSignup = () => {
     </div>
   </div>
 </template>
+
