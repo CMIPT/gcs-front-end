@@ -25,6 +25,10 @@ const total = ref(0);
 const currentPage = ref(1);
 const defaultPageSize = ref(10);
 
+onMounted(() => {
+  initialize();
+});
+
 const fetchRepositories = async (page: number) => {
   if (!userInfo.value.id) {
     // 还没有登录状态时不查询仓库列表

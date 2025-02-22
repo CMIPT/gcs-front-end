@@ -17,6 +17,15 @@ const form = reactive<SigninForm>({
 const userAuth = useUserAuth();
 const userInfo = useUserInfo();
 
+onMounted(() => {
+  initialize();
+  // TODO:
+  // Use api to check if the user is logged in
+  if (userAuth.value.accessToken) {
+    router.push("/");
+  }
+});
+
 const handleSignin = async () => {
   Message.loading({ id: "sign-in", content: "正在登录..." });
   const apiURL = new URL(
@@ -33,6 +42,11 @@ const handleSignin = async () => {
     });
     const accessToken = resp.headers.get("access-token")
     const refreshToken = resp.headers.get("refresh-token")
+    if (!accessToken || !refreshToken) {
+      throw new Error();
+    }
+    sessionStorage.setItem("access-token", accessToken);
+    localStorage.setItem("refresh-token", refreshToken);
     userAuth.value = {
       accessToken: accessToken,
       refreshToken: refreshToken,
@@ -47,6 +61,10 @@ const handleSignin = async () => {
     router.push("/");
   } catch (error: any) {
     console.error(error);
+    if (!error.data) {
+      Message.error({ id: "sign-in", content: "登录失败" });
+      return;
+    }
     const message = error.data["message"];
     Message.error({ id: "sign-in", content: message });
   }
