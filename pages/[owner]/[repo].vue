@@ -1,25 +1,11 @@
 <script setup lang="ts">
-import { ref, onMounted } from 'vue';
-import { useRoute } from 'vue-router';
+import { ref, onMounted } from "vue";
+import { useRoute } from "vue-router";
 
-type RepositoryResponse = {
-  id: string;
-  repositoryName: string;
-  repositoryDescription: string;
-  isPrivate: boolean;
-  userId: string;
-  username: string;
-  star: number;
-  fork: number;
-  watcher: number;
-  httpsUrl: string;
-  sshUrl: string;
-};
-
-const userAuth = useUserAuth();
+const router = useRouter();
 const route = useRoute();
-const repository = ref<RepositoryResponse | null>(null);
-const selectedBranch = ref('master');
+const repository = ref<RepositoryVO>();
+const selectedBranch = ref("master");
 const showBranchDropdown = ref(false);
 const showCodeDropdown = ref(false);
 const showSSH = ref(false);
@@ -28,12 +14,12 @@ const toggleSSH = () => {
   showSSH.value = !showSSH.value;
 };
 
-const branchSearch = ref('');
-const branches = ref(['master', 'develop', 'feature-1', 'feature-2']); // Example branches
+const branchSearch = ref("");
+const branches = ref(["master", "develop", "feature-1", "feature-2"]); // Example branches
 
-const selectedTag = ref('');
+const selectedTag = ref("");
 const showTags = ref(false);
-const tags = ref(['v1.0', 'v1.1', 'v2.0']); // Example tags
+const tags = ref(["v1.0", "v1.1", "v2.0"]); // Example tags
 
 const toggleTags = () => {
   showTags.value = !showTags.value;
@@ -42,32 +28,33 @@ const toggleTags = () => {
 const selectTag = (tag: string) => {
   selectedTag.value = tag;
   showTags.value = false;
-  selectedBranch.value = ''; // Clear branch selection when a tag is selected
+  selectedBranch.value = ""; // Clear branch selection when a tag is selected
 };
 
 const filteredBranches = computed(() => {
-  return branches.value.filter(branch => branch.toLowerCase().includes(branchSearch.value.toLowerCase()));
+  return branches.value.filter((branch) =>
+    branch.toLowerCase().includes(branchSearch.value.toLowerCase()),
+  );
 });
 
-const fetchRepositoryDetails = async (username: string, repositoryName: string) => {
-  try {
-    const apiURL = new URL(
-      APIPaths.REPOSITORY_GET_REPOSITORY_API_PATH,
-      window.origin
-    );
-    apiURL.searchParams.append("username", username);
-    apiURL.searchParams.append("repositoryName", repositoryName);
-    const response = await $fetch(apiURL.toString(), {
-      headers: {
-        "Access-Token": userAuth.value.accessToken || "",
-      },
-    });
-    repository.value = response as RepositoryResponse;
-  } catch (error) {
+const fetchRepositoryDetails = async (
+  username: string,
+  repositoryName: string,
+) => {
+  const apiURL = new URL(
+    APIPaths.REPOSITORY_GET_REPOSITORY_API_PATH,
+    window.origin,
+  );
+  apiURL.searchParams.append("username", username);
+  apiURL.searchParams.append("repositoryName", repositoryName);
+  repository.value = await fetchWithRetry<RepositoryVO>(
+    apiURL.toString(),
+  ).catch((error) => {
     console.error("Failed to fetch repository details:", error);
     const message = error.data["message"];
     Message.error({ id: "fetch-repository", content: message });
-  }
+    return {} as RepositoryVO;
+  });
 };
 
 const toggleBranchDropdown = () => {
@@ -85,28 +72,31 @@ const toggleCodeDropdown = () => {
 
 const copyToClipboard = (text: string) => {
   if (navigator.clipboard && navigator.clipboard.writeText) {
-    navigator.clipboard.writeText(text).then(() => {
-      Message.success({ content: '复制成功!' });
-    }).catch(err => {
-      Message.error({ content: '复制失败，请重试。' });
-    });
+    navigator.clipboard
+      .writeText(text)
+      .then(() => {
+        Message.success({ content: "复制成功!" });
+      })
+      .catch(() => {
+        Message.error({ content: "复制失败，请重试。" });
+      });
   } else {
     // Fallback method for older browsers
-    const textarea = document.createElement('textarea');
+    const textarea = document.createElement("textarea");
     textarea.value = text;
-    textarea.style.position = 'fixed';  // Prevent scrolling to bottom of page in MS Edge.
+    textarea.style.position = "fixed"; // Prevent scrolling to bottom of page in MS Edge.
     document.body.appendChild(textarea);
     textarea.focus();
     textarea.select();
     try {
-      const successful = document.execCommand('copy');
+      const successful = document.execCommand("copy");
       if (successful) {
-        Message.success({ content: '复制成功！' });
+        Message.success({ content: "复制成功！" });
       } else {
-        Message.error({ content: '复制失败，请重试。' });
+        Message.error({ content: "复制失败，请重试。" });
       }
     } catch (err) {
-      Message.error({ content: '复制失败，请重试。' });
+      Message.error({ content: "复制失败，请重试。" });
     }
     document.body.removeChild(textarea);
   }
@@ -130,57 +120,72 @@ const handleWatchersClick = () => {
 
 // Function to handle clicks outside the dropdown
 const handleClickOutside = (event: MouseEvent) => {
-  const branchDropdown = document.querySelector('.branch-dropdown');
-  const codeDropdown = document.querySelector('.code-dropdown');
-  if (branchDropdown && !branchDropdown.contains(event.target as Node) && !event.target.closest('.branch-button')) {
+  const branchDropdown = document.querySelector(".branch-dropdown");
+  const codeDropdown = document.querySelector(".code-dropdown");
+  if (
+    branchDropdown &&
+    !branchDropdown.contains(event.target as Node) &&
+    !event.target.closest(".branch-button")
+  ) {
     showBranchDropdown.value = false;
   }
-  if (codeDropdown && !codeDropdown.contains(event.target as Node) && !event.target.closest('.code-button')) {
+  if (
+    codeDropdown &&
+    !codeDropdown.contains(event.target as Node) &&
+    !event.target.closest(".code-button")
+  ) {
     showCodeDropdown.value = false;
   }
 };
 
-onMounted(() => {
+onMounted(async () => {
   const username = route.params.owner as string;
   const repositoryName = route.params.repo as string;
+  await initialize();
+  if (!useUserInfo().value.id) {
+    router.push("/");
+  }
   fetchRepositoryDetails(username, repositoryName);
-
   // Add event listener for clicks outside the dropdown
-  document.addEventListener('click', handleClickOutside);
+  document.addEventListener("click", handleClickOutside);
 });
 
 onBeforeUnmount(() => {
   // Remove event listener when component is unmounted
-  document.removeEventListener('click', handleClickOutside);
+  document.removeEventListener("click", handleClickOutside);
 });
 </script>
 
 <template>
   <div class="repository-details" v-if="repository">
     <div class="repository-header">
-    <div class="repository-title">
-      <h1>
-        {{ repository.repositoryName }}
-        <span class="repository-visibility">
-          {{ repository.isPrivate ? 'Private' : 'Public' }}
-        </span>
-      </h1>
-      <div class="repository-meta-inline">
-        <span class="meta-item">
-          <strong>Star </strong>
-          <button @click="handleStarsClick">{{ repository.star }}</button>
-        </span>
-        <span class="meta-item">
-          <strong>Fork </strong>
-          <button @click="handleForksClick">{{ repository.fork }}</button>
-        </span>
-        <span class="meta-item">
-          <strong>Watch </strong>
-          <button @click="handleWatchersClick">{{ repository.watcher }}</button>
-        </span>
+      <div class="repository-title">
+        <h1>
+          {{ repository.repositoryName }}
+          <span class="repository-visibility">
+            {{ repository.isPrivate ? "Private" : "Public" }}
+          </span>
+        </h1>
+        <div class="repository-meta-inline">
+          <span class="meta-item">
+            <strong>Star </strong>
+            <button @click="handleStarsClick">{{ repository.star }}</button>
+          </span>
+          <span class="meta-item">
+            <strong>Fork </strong>
+            <button @click="handleForksClick">{{ repository.fork }}</button>
+          </span>
+          <span class="meta-item">
+            <strong>Watch </strong>
+            <button @click="handleWatchersClick">
+              {{ repository.watcher }}
+            </button>
+          </span>
+        </div>
       </div>
-    </div>
-      <p class="repository-owner">Owned by <strong>{{ repository.username }}</strong></p>
+      <p class="repository-owner">
+        Owned by <strong>{{ repository.username }}</strong>
+      </p>
     </div>
     <div class="repository-actions">
       <button class="branch-button" @click="toggleBranchDropdown">
@@ -190,8 +195,17 @@ onBeforeUnmount(() => {
         <div class="dropdown-header">
           <span>Switch branches/tags</span>
           <span class="close-icon" @click="toggleBranchDropdown">
-            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-x" viewBox="0 0 16 16">
-              <path d="M4.646 4.646a.5.5 0 0 1 .708 0L8 7.293l2.646-2.647a.5.5 0 0 1 .708.708L8.707 8l2.647 2.646a.5.5 0 0 1-.708.708L8 8.707l-2.646 2.647a.5.5 0 0 1-.708-.708L7.293 8 4.646 5.354a.5.5 0 0 1 0-.708z"/>
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              width="16"
+              height="16"
+              fill="currentColor"
+              class="bi bi-x"
+              viewBox="0 0 16 16"
+            >
+              <path
+                d="M4.646 4.646a.5.5 0 0 1 .708 0L8 7.293l2.646-2.647a.5.5 0 0 1 .708.708L8.707 8l2.647 2.646a.5.5 0 0 1-.708.708L8 8.707l-2.646 2.647a.5.5 0 0 1-.708-.708L7.293 8 4.646 5.354a.5.5 0 0 1 0-.708z"
+              />
             </svg>
           </span>
         </div>
@@ -209,21 +223,33 @@ onBeforeUnmount(() => {
         </div>
         <div v-if="showTags">
           <p v-if="tags.length === 0" class="dropdown-item">Nothing to show</p>
-          <p v-for="tag in tags" :key="tag" @click="selectTag(tag)" class="dropdown-item">
+          <p
+            v-for="tag in tags"
+            :key="tag"
+            @click="selectTag(tag)"
+            class="dropdown-item"
+          >
             {{ tag }}
           </p>
         </div>
         <div v-else>
-          <p v-if="filteredBranches.length === 0" class="dropdown-item">Nothing to show</p>
-          <p v-for="branch in filteredBranches" :key="branch" @click="selectBranch(branch)" class="dropdown-item">
-            <span :class="{ 'default-branch': branch === 'master' }">{{ branch }}</span>
+          <p v-if="filteredBranches.length === 0" class="dropdown-item">
+            Nothing to show
+          </p>
+          <p
+            v-for="branch in filteredBranches"
+            :key="branch"
+            @click="selectBranch(branch)"
+            class="dropdown-item"
+          >
+            <span :class="{ 'default-branch': branch === 'master' }">{{
+              branch
+            }}</span>
             <span v-if="branch === 'master'" class="tag">default</span>
           </p>
         </div>
       </div>
-      <button class="code-button" @click="toggleCodeDropdown">
-        Code ▼
-      </button>
+      <button class="code-button" @click="toggleCodeDropdown">Code ▼</button>
       <div v-if="showCodeDropdown" class="code-dropdown">
         <div class="toggle-section">
           <p @click="toggleSSH" :class="{ active: !showSSH }">HTTPS</p>
@@ -233,18 +259,40 @@ onBeforeUnmount(() => {
         <div v-if="showSSH" class="url-container">
           <span class="url-text">{{ repository.sshUrl }}</span>
           <span class="copy-icon" @click="copyToClipboard(repository.sshUrl)">
-            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-clipboard" viewBox="0 0 16 16">
-              <path d="M13 1H9.5a.5.5 0 0 0 0 1H13a1 1 0 0 1 1 1v11a1 1 0 0 1-1 1H3a1 1 0 0 1-1-1V3a1 1 0 0 1 1-1h3.5a.5.5 0 0 0 0-1H3a2 2 0 0 0-2 2v11a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V3a2 2 0 0 0-2-2z"/>
-              <path d="M5.5 0a.5.5 0 0 0-.5.5V1h-1a.5.5 0 0 0 0 1h1v.5a.5.5 0 0 0 1 0V2h1a.5.5 0 0 0 0-1h-1v-.5a.5.5 0 0 0-.5-.5z"/>
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              width="16"
+              height="16"
+              fill="currentColor"
+              class="bi bi-clipboard"
+              viewBox="0 0 16 16"
+            >
+              <path
+                d="M13 1H9.5a.5.5 0 0 0 0 1H13a1 1 0 0 1 1 1v11a1 1 0 0 1-1 1H3a1 1 0 0 1-1-1V3a1 1 0 0 1 1-1h3.5a.5.5 0 0 0 0-1H3a2 2 0 0 0-2 2v11a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V3a2 2 0 0 0-2-2z"
+              />
+              <path
+                d="M5.5 0a.5.5 0 0 0-.5.5V1h-1a.5.5 0 0 0 0 1h1v.5a.5.5 0 0 0 1 0V2h1a.5.5 0 0 0 0-1h-1v-.5a.5.5 0 0 0-.5-.5z"
+              />
             </svg>
           </span>
         </div>
         <div v-else class="url-container">
           <span class="url-text">{{ repository.httpsUrl }}</span>
           <span class="copy-icon" @click="copyToClipboard(repository.httpsUrl)">
-            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-clipboard" viewBox="0 0 16 16">
-              <path d="M13 1H9.5a.5.5 0 0 0 0 1H13a1 1 0 0 1 1 1v11a1 1 0 0 1-1 1H3a1 1 0 0 1-1-1V3a1 1 0 0 1 1-1h3.5a.5.5 0 0 0 0-1H3a2 2 0 0 0-2 2v11a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V3a2 2 0 0 0-2-2z"/>
-              <path d="M5.5 0a.5.5 0 0 0-.5.5V1h-1a.5.5 0 0 0 0 1h1v.5a.5.5 0 0 0 1 0V2h1a.5.5 0 0 0 0-1h-1v-.5a.5.5 0 0 0-.5-.5z"/>
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              width="16"
+              height="16"
+              fill="currentColor"
+              class="bi bi-clipboard"
+              viewBox="0 0 16 16"
+            >
+              <path
+                d="M13 1H9.5a.5.5 0 0 0 0 1H13a1 1 0 0 1 1 1v11a1 1 0 0 1-1 1H3a1 1 0 0 1-1-1V3a1 1 0 0 1 1-1h3.5a.5.5 0 0 0 0-1H3a2 2 0 0 0-2 2v11a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V3a2 2 0 0 0-2-2z"
+              />
+              <path
+                d="M5.5 0a.5.5 0 0 0-.5.5V1h-1a.5.5 0 0 0 0 1h1v.5a.5.5 0 0 0 1 0V2h1a.5.5 0 0 0 0-1h-1v-.5a.5.5 0 0 0-.5-.5z"
+              />
             </svg>
           </span>
         </div>
@@ -264,7 +312,6 @@ onBeforeUnmount(() => {
 </template>
 
 <style scoped>
-
 .url-container {
   display: flex;
   align-items: center;
@@ -389,7 +436,8 @@ onBeforeUnmount(() => {
   position: relative;
 }
 
-.branch-button, .code-button {
+.branch-button,
+.code-button {
   padding: 6px 12px;
   font-size: 14px;
   font-weight: 500;
@@ -400,11 +448,13 @@ onBeforeUnmount(() => {
   cursor: pointer;
 }
 
-.branch-button:hover, .code-button:hover {
+.branch-button:hover,
+.code-button:hover {
   background-color: #0056b3;
 }
 
-.branch-dropdown, .code-dropdown {
+.branch-dropdown,
+.code-dropdown {
   position: absolute;
   top: 100%; /* Position dropdown below the button */
   left: 0;

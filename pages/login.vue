@@ -1,5 +1,4 @@
 <script setup lang="ts">
-import type { UserVO } from '~/composables/responseVOTypes';
 
 const signinWidth = "300px";
 const router = useRouter();
@@ -14,14 +13,11 @@ const form = reactive<SigninForm>({
   password: "",
 });
 
-const userAuth = useUserAuth();
 const userInfo = useUserInfo();
 
-onMounted(() => {
-  initialize();
-  // TODO:
-  // Use api to check if the user is logged in
-  if (userAuth.value.accessToken) {
+onMounted(async () => {
+  await initialize();
+  if (userInfo.value.id) {
     router.push("/");
   }
 });
@@ -47,16 +43,11 @@ const handleSignin = async () => {
     }
     sessionStorage.setItem("access-token", accessToken);
     localStorage.setItem("refresh-token", refreshToken);
-    userAuth.value = {
+    useUserAuth().value = {
       accessToken: accessToken,
       refreshToken: refreshToken,
     };
-    const data = resp._data as UserVO;
-    userInfo.value = {
-      id: data.id,
-      username: data.username,
-      email: data.email,
-    };
+    userInfo.value = resp._data as UserVO;
     Message.success({ id: "sign-in", content: "登录成功，跳转到主页" });
     router.push("/");
   } catch (error: any) {

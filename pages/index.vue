@@ -4,30 +4,10 @@ import type { PaginationProps } from "@arco-design/web-vue";
 const userAuth = useUserAuth();
 const userInfo = useUserInfo();
 
-type UserRepositoryResponse = {
-  id: string;
-  repositoryDescription: string;
-  repositoryName: string;
-  star: number;
-  username: string;
-};
-
-type UserRepository = {
-  id: string;
-  description: string;
-  name: string;
-  star: number;
-  ownerName: string;
-};
-
-const userRepositoryList = ref<UserRepository[]>([]);
+const userRepositoryList = ref<RepositoryVO[]>([]);
 const total = ref(0);
 const currentPage = ref(1);
 const defaultPageSize = ref(10);
-
-onMounted(() => {
-  initialize();
-});
 
 const fetchRepositories = async (page: number) => {
   if (!userInfo.value.id) {
@@ -41,23 +21,15 @@ const fetchRepositories = async (page: number) => {
   apiURL.searchParams.append("id", userInfo.value.id);
   apiURL.searchParams.append("page", page.toString());
   apiURL.searchParams.append("size", defaultPageSize.value.toString());
-  const response = await $fetch(apiURL.toString(), {
-    headers: {
-      "Access-Token": userAuth.value.accessToken || "",
-    },
-  });
-  const records = response.records as UserRepositoryResponse[];
+  const response = await fetchWithRetry<PageVO<RepositoryVO>>(
+    apiURL.toString(),
+  );
+  userRepositoryList.value = response.records;
   total.value = response.total;
-  userRepositoryList.value = records.map((repo) => ({
-    id: repo.id,
-    description: repo.repositoryDescription,
-    name: repo.repositoryName,
-    star: repo.star,
-    ownerName: repo.username,
-  }));
 };
 
 onMounted(async () => {
+  await initialize();
   fetchRepositories(currentPage.value);
 });
 
@@ -70,7 +42,7 @@ const paginationProps = computed(() => {
       currentPage.value = page;
       fetchRepositories(page);
     },
-  };
+  } as PaginationProps;
 });
 </script>
 
@@ -115,11 +87,11 @@ const paginationProps = computed(() => {
           :pagination-props="paginationProps"
         >
           <template #item="{ item }">
-            <NuxtLink :to="`/${item.ownerName}/${item.name}`">
+            <NuxtLink :to="`/${item.username}/${item.repositoryName}`">
               <a-list-item class="list-demo-item" action-layout="vertical">
                 <a-list-item-meta
-                  :title="`${item.ownerName}/${item.name}`"
-                  :description="item.description"
+                  :title="`${item.username}/${item.repositoryName}`"
+                  :description="item.repositoryDescription"
                 >
                   <template #avatar>
                     <!-- TODO: 用户头像 -->
