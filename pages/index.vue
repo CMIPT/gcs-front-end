@@ -75,11 +75,9 @@ const paginationProps = computed(() => {
           <!-- TODO: 用户头像 -->
           <NuxtLink to="/settings/keys">
             <a-avatar v-if="userInfo.username">
-              {{ userInfo.username.charAt(0).toUpperCase() }}
+              {{ userInfo.username }}
             </a-avatar>
           </NuxtLink>
-          <a-divider direction="vertical" />
-          <a-typography-text>{{ userInfo.username }}</a-typography-text>
         </div>
       </div>
     </a-layout-header>
@@ -103,7 +101,7 @@ const paginationProps = computed(() => {
                   <template #avatar>
                     <!-- TODO: 用户头像 -->
                     <a-avatar v-if="userInfo.username">
-                      {{ userInfo.username.charAt(0).toUpperCase() }}
+                      {{ userInfo.username }}
                     </a-avatar>
                   </template>
                 </a-list-item-meta>
