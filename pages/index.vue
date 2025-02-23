@@ -72,7 +72,12 @@ const paginationProps = computed(() => {
           <NuxtLink to="/new">
             <a-button type="text">新建仓库</a-button>
           </NuxtLink>
-          <NuxtLink to="/settings/keys"> Avatar </NuxtLink>
+          <!-- TODO: 用户头像 -->
+          <NuxtLink to="/settings/keys">
+            <a-avatar v-if="userInfo.username">
+              {{ userInfo.username.charAt(0).toUpperCase() }}
+            </a-avatar>
+          </NuxtLink>
           <a-divider direction="vertical" />
           <a-typography-text>{{ userInfo.username }}</a-typography-text>
         </div>
@@ -80,7 +85,9 @@ const paginationProps = computed(() => {
     </a-layout-header>
     <a-layout-content>
       <div class="max-w-screen-lg mx-auto">
-        <a-typography-title :heading="3"> 项目 </a-typography-title>
+        <a-typography-title :heading="3" v-if="userInfo.username">
+          {{ userInfo.username }}的项目
+        </a-typography-title>
         <a-list
           :bordered="false"
           :data="userRepositoryList"
@@ -95,7 +102,9 @@ const paginationProps = computed(() => {
                 >
                   <template #avatar>
                     <!-- TODO: 用户头像 -->
-                    Avatar
+                    <a-avatar v-if="userInfo.username">
+                      {{ userInfo.username.charAt(0).toUpperCase() }}
+                    </a-avatar>
                   </template>
                 </a-list-item-meta>
               </a-list-item>
