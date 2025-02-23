@@ -88,7 +88,7 @@ onMounted(async () => {
             </NuxtLink>
             <NuxtLink to="/settings/keys">
               <a-avatar>
-                {{ repository.username.charAt(0).toUpperCase() }}
+                {{ repository.username }}
               </a-avatar>
             </NuxtLink>
           </a-space>
@@ -119,7 +119,7 @@ onMounted(async () => {
           <a-col flex="auto">
             <a-space>
               <a-avatar :size="30">
-                {{ repository.username.charAt(0).toUpperCase() }}
+                {{ repository.username }}
               </a-avatar>
               <a-typography-text :bold="true">
                 {{ repository.repositoryName }}
