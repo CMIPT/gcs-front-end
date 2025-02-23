@@ -139,8 +139,8 @@ const handleClickOutside = (event: MouseEvent) => {
 };
 
 onMounted(async () => {
-  const username = route.params.owner as string;
-  const repositoryName = route.params.repo as string;
+  const username = route.params.username as string;
+  const repositoryName = route.params.repositoryName as string;
   await initialize();
   if (!useUserInfo().value.id) {
     router.push("/");
