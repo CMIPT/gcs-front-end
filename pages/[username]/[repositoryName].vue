@@ -1,36 +1,12 @@
 <script setup lang="ts">
-import { ref, onMounted } from "vue";
-import { useRoute } from "vue-router";
-
-const router = useRouter();
 const route = useRoute();
 const repository = ref<RepositoryVO>();
 const selectedBranch = ref("master");
-const showBranchDropdown = ref(false);
-const showCodeDropdown = ref(false);
-const showSSH = ref(false);
-
-const toggleSSH = () => {
-  showSSH.value = !showSSH.value;
-};
-
 const branchSearch = ref("");
 const branches = ref(["master", "develop", "feature-1", "feature-2"]); // Example branches
-
 const selectedTag = ref("");
 const showTags = ref(false);
 const tags = ref(["v1.0", "v1.1", "v2.0"]); // Example tags
-
-const toggleTags = () => {
-  showTags.value = !showTags.value;
-};
-
-const selectTag = (tag: string) => {
-  selectedTag.value = tag;
-  showTags.value = false;
-  selectedBranch.value = ""; // Clear branch selection when a tag is selected
-};
-
 const filteredBranches = computed(() => {
   return branches.value.filter((branch) =>
     branch.toLowerCase().includes(branchSearch.value.toLowerCase()),
@@ -57,488 +33,345 @@ const fetchRepositoryDetails = async (
   });
 };
 
-const toggleBranchDropdown = () => {
-  showBranchDropdown.value = !showBranchDropdown.value;
+const selectTag = (tag: string) => {
+  selectedTag.value = tag;
+  showTags.value = false;
+  selectedBranch.value = ""; // Clear branch selection when a tag is selected
 };
 
 const selectBranch = (branch: string) => {
   selectedBranch.value = branch;
-  showBranchDropdown.value = false;
-};
-
-const toggleCodeDropdown = () => {
-  showCodeDropdown.value = !showCodeDropdown.value;
-};
-
-const copyToClipboard = (text: string) => {
-  if (navigator.clipboard && navigator.clipboard.writeText) {
-    navigator.clipboard
-      .writeText(text)
-      .then(() => {
-        Message.success({ content: "复制成功!" });
-      })
-      .catch(() => {
-        Message.error({ content: "复制失败，请重试。" });
-      });
-  } else {
-    // Fallback method for older browsers
-    const textarea = document.createElement("textarea");
-    textarea.value = text;
-    textarea.style.position = "fixed"; // Prevent scrolling to bottom of page in MS Edge.
-    document.body.appendChild(textarea);
-    textarea.focus();
-    textarea.select();
-    try {
-      const successful = document.execCommand("copy");
-      if (successful) {
-        Message.success({ content: "复制成功！" });
-      } else {
-        Message.error({ content: "复制失败，请重试。" });
-      }
-    } catch (err) {
-      Message.error({ content: "复制失败，请重试。" });
-    }
-    document.body.removeChild(textarea);
-  }
-};
-
-const toggleBranches = () => {
-  showTags.value = false;
-};
-
-const handleStarsClick = () => {
-  // Leave action empty for now
-};
-
-const handleForksClick = () => {
-  // Leave action empty for now
-};
-
-const handleWatchersClick = () => {
-  // Leave action empty for now
-};
-
-// Function to handle clicks outside the dropdown
-const handleClickOutside = (event: MouseEvent) => {
-  const branchDropdown = document.querySelector(".branch-dropdown");
-  const codeDropdown = document.querySelector(".code-dropdown");
-  if (
-    branchDropdown &&
-    !branchDropdown.contains(event.target as Node) &&
-    !event.target.closest(".branch-button")
-  ) {
-    showBranchDropdown.value = false;
-  }
-  if (
-    codeDropdown &&
-    !codeDropdown.contains(event.target as Node) &&
-    !event.target.closest(".code-button")
-  ) {
-    showCodeDropdown.value = false;
-  }
 };
 
 onMounted(async () => {
-  const username = route.params.username as string;
-  const repositoryName = route.params.repositoryName as string;
   await initialize();
   if (!useUserInfo().value.id) {
-    router.push("/");
+    useRouter().push("/");
   }
+  const username = route.params.username as string;
+  const repositoryName = route.params.repositoryName as string;
   fetchRepositoryDetails(username, repositoryName);
-  // Add event listener for clicks outside the dropdown
-  document.addEventListener("click", handleClickOutside);
-});
-
-onBeforeUnmount(() => {
-  // Remove event listener when component is unmounted
-  document.removeEventListener("click", handleClickOutside);
 });
 </script>
 
 <template>
-  <div class="repository-details" v-if="repository">
-    <div class="repository-header">
-      <div class="repository-title">
-        <h1>
-          {{ repository.repositoryName }}
-          <span class="repository-visibility">
-            {{ repository.isPrivate ? "Private" : "Public" }}
-          </span>
-        </h1>
-        <div class="repository-meta-inline">
-          <span class="meta-item">
-            <strong>Star </strong>
-            <button @click="handleStarsClick">{{ repository.star }}</button>
-          </span>
-          <span class="meta-item">
-            <strong>Fork </strong>
-            <button @click="handleForksClick">{{ repository.fork }}</button>
-          </span>
-          <span class="meta-item">
-            <strong>Watch </strong>
-            <button @click="handleWatchersClick">
-              {{ repository.watcher }}
-            </button>
-          </span>
-        </div>
-      </div>
-      <p class="repository-owner">
-        Owned by <strong>{{ repository.username }}</strong>
-      </p>
-    </div>
-    <div class="repository-actions">
-      <button class="branch-button" @click="toggleBranchDropdown">
-        {{ selectedBranch || selectedTag }} ▼
-      </button>
-      <div v-if="showBranchDropdown" class="branch-dropdown">
-        <div class="dropdown-header">
-          <span>Switch branches/tags</span>
-          <span class="close-icon" @click="toggleBranchDropdown">
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              width="16"
-              height="16"
-              fill="currentColor"
-              class="bi bi-x"
-              viewBox="0 0 16 16"
+  <a-spin :loading="repository ? false : true" tip="正在获取仓库详情……">
+    <div class="repository-container" v-if="repository">
+      <!-- Header Section -->
+      <div class="header-container">
+        <a-flex justify="space-between" align="flex-start">
+          <div class="repo-header">
+            <a-flex align="center" :gap="8">
+              <h1 class="repo-title">
+                <span class="owner-name">{{ repository.username }}</span>
+                <span class="divider">/</span>
+                <span class="repo-name">{{ repository.repositoryName }}</span>
+              </h1>
+              <a-tag
+                :color="repository.isPrivate ? 'gray' : 'green'"
+                bordered
+                class="visibility-tag"
+              >
+                {{ repository.isPrivate ? "Private" : "Public" }}
+              </a-tag>
+            </a-flex>
+
+            <div
+              v-if="repository.repositoryDescription"
+              class="repo-description"
             >
-              <path
-                d="M4.646 4.646a.5.5 0 0 1 .708 0L8 7.293l2.646-2.647a.5.5 0 0 1 .708.708L8.707 8l2.647 2.646a.5.5 0 0 1-.708.708L8 8.707l-2.646 2.647a.5.5 0 0 1-.708-.708L7.293 8 4.646 5.354a.5.5 0 0 1 0-.708z"
-              />
-            </svg>
-          </span>
-        </div>
-        <div class="branch-search">
-          <input
-            type="text"
-            v-model="branchSearch"
-            :placeholder="showTags ? 'Search tags...' : 'Search branches...'"
-          />
-        </div>
-        <div class="toggle-section">
-          <p @click="toggleBranches" :class="{ active: !showTags }">Branches</p>
-          <span class="separator">|</span>
-          <p @click="toggleTags" :class="{ active: showTags }">Tags</p>
-        </div>
-        <div v-if="showTags">
-          <p v-if="tags.length === 0" class="dropdown-item">Nothing to show</p>
-          <p
-            v-for="tag in tags"
-            :key="tag"
-            @click="selectTag(tag)"
-            class="dropdown-item"
-          >
-            {{ tag }}
-          </p>
-        </div>
-        <div v-else>
-          <p v-if="filteredBranches.length === 0" class="dropdown-item">
-            Nothing to show
-          </p>
-          <p
-            v-for="branch in filteredBranches"
-            :key="branch"
-            @click="selectBranch(branch)"
-            class="dropdown-item"
-          >
-            <span :class="{ 'default-branch': branch === 'master' }">{{
-              branch
-            }}</span>
-            <span v-if="branch === 'master'" class="tag">default</span>
-          </p>
-        </div>
+              {{ repository.repositoryDescription }}
+            </div>
+          </div>
+
+          <a-space :size="16" class="repo-stats">
+            <a-button type="text" class="stat-item">
+              <icon-star class="stat-icon" />
+              <span class="stat-number">{{ repository.star }}</span>
+              <span class="stat-label">Star</span>
+            </a-button>
+            <a-button type="text" class="stat-item">
+              <icon-fork class="stat-icon" />
+              <span class="stat-number">{{ repository.fork }}</span>
+              <span class="stat-label">Fork</span>
+            </a-button>
+            <a-button type="text" class="stat-item">
+              <icon-eye class="stat-icon" />
+              <span class="stat-number">{{ repository.watcher }}</span>
+              <span class="stat-label">Watch</span>
+            </a-button>
+          </a-space>
+        </a-flex>
       </div>
-      <button class="code-button" @click="toggleCodeDropdown">Code ▼</button>
-      <div v-if="showCodeDropdown" class="code-dropdown">
-        <div class="toggle-section">
-          <p @click="toggleSSH" :class="{ active: !showSSH }">HTTPS</p>
-          <span class="separator">|</span>
-          <p @click="toggleSSH" :class="{ active: showSSH }">SSH</p>
-        </div>
-        <div v-if="showSSH" class="url-container">
-          <span class="url-text">{{ repository.sshUrl }}</span>
-          <span class="copy-icon" @click="copyToClipboard(repository.sshUrl)">
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              width="16"
-              height="16"
-              fill="currentColor"
-              class="bi bi-clipboard"
-              viewBox="0 0 16 16"
-            >
-              <path
-                d="M13 1H9.5a.5.5 0 0 0 0 1H13a1 1 0 0 1 1 1v11a1 1 0 0 1-1 1H3a1 1 0 0 1-1-1V3a1 1 0 0 1 1-1h3.5a.5.5 0 0 0 0-1H3a2 2 0 0 0-2 2v11a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V3a2 2 0 0 0-2-2z"
-              />
-              <path
-                d="M5.5 0a.5.5 0 0 0-.5.5V1h-1a.5.5 0 0 0 0 1h1v.5a.5.5 0 0 0 1 0V2h1a.5.5 0 0 0 0-1h-1v-.5a.5.5 0 0 0-.5-.5z"
-              />
-            </svg>
-          </span>
-        </div>
-        <div v-else class="url-container">
-          <span class="url-text">{{ repository.httpsUrl }}</span>
-          <span class="copy-icon" @click="copyToClipboard(repository.httpsUrl)">
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              width="16"
-              height="16"
-              fill="currentColor"
-              class="bi bi-clipboard"
-              viewBox="0 0 16 16"
-            >
-              <path
-                d="M13 1H9.5a.5.5 0 0 0 0 1H13a1 1 0 0 1 1 1v11a1 1 0 0 1-1 1H3a1 1 0 0 1-1-1V3a1 1 0 0 1 1-1h3.5a.5.5 0 0 0 0-1H3a2 2 0 0 0-2 2v11a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V3a2 2 0 0 0-2-2z"
-              />
-              <path
-                d="M5.5 0a.5.5 0 0 0-.5.5V1h-1a.5.5 0 0 0 0 1h1v.5a.5.5 0 0 0 1 0V2h1a.5.5 0 0 0 0-1h-1v-.5a.5.5 0 0 0-.5-.5z"
-              />
-            </svg>
-          </span>
-        </div>
+
+      <!-- Navigation Tabs -->
+      <div class="nav-container">
+        <a-menu mode="horizontal" :default-selected-keys="['code']">
+          <a-menu-item key="code">
+            <template #icon><icon-code /></template>
+            Code
+          </a-menu-item>
+          <a-menu-item key="issues">
+            <template #icon><icon-issue /></template>
+            Issues
+          </a-menu-item>
+          <a-menu-item key="pr">
+            <template #icon><icon-pull-request /></template>
+            Pull Requests
+          </a-menu-item>
+        </a-menu>
       </div>
+
+      <!-- Branch/Code Section -->
+      <div class="action-bar">
+        <a-space :size="16">
+          <a-dropdown trigger="click" position="bl">
+            <a-button type="outline" class="branch-selector">
+              <!-- TODO: show tag icon when selecting tags -->
+              <template #icon><icon-branch /></template>
+              {{ selectedBranch || selectedTag }}
+              <icon-down />
+            </a-button>
+            <template #content>
+              <div class="dropdown-content">
+                <a-input
+                  v-model="branchSearch"
+                  :placeholder="
+                    showTags ? 'Search tags...' : 'Search branches...'
+                  "
+                  allow-clear
+                >
+                  <template #prefix>
+                    <icon-search />
+                  </template>
+                </a-input>
+
+                <a-tabs type="rounded" :default-active-key="'branches'">
+                  <a-tab-pane key="branches" title="Branches">
+                    <a-list :bordered="false" :split="false">
+                      <a-list-item
+                        v-for="branch in filteredBranches"
+                        :key="branch"
+                        @click="selectBranch(branch)"
+                      >
+                        <a-space>
+                          <icon-branch />
+                          <!--TODO: update master with default bracn get from back-end-->
+                          <span
+                            :class="{ 'default-branch': branch === 'master' }"
+                          >
+                            {{ branch }}
+                          </span>
+                          <!--TODO: update master with default bracn get from back-end-->
+                          <a-tag
+                            v-if="branch === 'master'"
+                            color="arcoblue"
+                            size="small"
+                          >
+                            default
+                          </a-tag>
+                        </a-space>
+                      </a-list-item>
+                    </a-list>
+                  </a-tab-pane>
+                  <a-tab-pane key="tags" title="Tags">
+                    <a-list :bordered="false" :split="false">
+                      <a-list-item
+                        v-for="tag in tags"
+                        :key="tag"
+                        @click="selectTag(tag)"
+                      >
+                        <a-space>
+                          <icon-tag />
+                          {{ tag }}
+                        </a-space>
+                      </a-list-item>
+                    </a-list>
+                  </a-tab-pane>
+                </a-tabs>
+              </div>
+            </template>
+          </a-dropdown>
+
+          <a-dropdown trigger="click" position="bl">
+            <a-button type="outline" class="code-selector">
+              <template #icon><icon-code /></template>
+              Code
+              <icon-down />
+            </a-button>
+            <template #content>
+              <div class="dropdown-content">
+                <a-tabs :default-active-key="'ssh'">
+                  <a-tab-pane key="https" title="HTTPS">
+                    <a-space>
+                      <a-typography-text copyable>
+                        {{ repository.httpsUrl }}
+                      </a-typography-text>
+                    </a-space>
+                  </a-tab-pane>
+                  <a-tab-pane key="ssh" title="SSH">
+                    <a-space>
+                      <a-typography-text copyable>
+                        {{ repository.sshUrl }}
+                      </a-typography-text>
+                    </a-space>
+                  </a-tab-pane>
+                </a-tabs>
+              </div>
+            </template>
+          </a-dropdown>
+        </a-space>
+      </div>
+
+      <!-- File Browser -->
+      <a-card class="file-browser" :bordered="false">
+        <a-list>
+          <a-list-item v-for="item in 5" :key="item">
+            <a-flex align="center" :gap="8">
+              <icon-file class="file-icon" />
+              <span class="file-name">example-file-{{ item }}.txt</span>
+              <span class="commit-message">Initial commit</span>
+              <span class="commit-time">2 hours ago</span>
+            </a-flex>
+          </a-list-item>
+        </a-list>
+      </a-card>
     </div>
-    <div class="repository-description">
-      <p>{{ repository.repositoryDescription }}</p>
-    </div>
-    <div class="repository-directory">
-      <h2>Directory</h2>
-      <p>Directory information will be displayed here.</p>
-    </div>
-  </div>
-  <div v-else>
-    <p>Loading repository details...</p>
-  </div>
+  </a-spin>
 </template>
 
 <style scoped>
-.url-container {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 5px 10px;
-  border: 1px solid #e1e4e8;
-  border-radius: 4px;
-  background-color: #f6f8fa;
-  margin: 5px 0;
-}
-
-.url-text {
-  flex-grow: 1;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.copy-icon {
-  cursor: pointer;
-  margin-left: 10px;
-  font-size: 16px;
-  color: #0366d6;
-  display: flex;
-  align-items: center;
-}
-
-.copy-icon:hover {
-  color: #0056b3;
-}
-.toggle-section {
-  display: flex;
-  justify-content: flex-start; /* Align items to the start */
-  align-items: center;
-  margin-bottom: 5px;
-}
-
-.toggle-section p {
-  cursor: pointer;
-  font-weight: bold;
-  padding: 5px;
-  margin: 0;
-}
-
-.toggle-section p.active {
-  color: #0366d6;
-  border-bottom: 2px solid #0366d6;
-}
-
-.separator {
-  margin: 0 2px;
-  color: #ccc;
-}
-
-.dropdown-item {
-  padding: 5px 10px;
-  border-bottom: 1px solid #e1e4e8;
-  cursor: pointer;
-}
-
-.dropdown-item:last-child {
-  border-bottom: none;
-}
-
-.repository-details {
-  max-width: 800px;
+.repository-container {
+  width: 100%;
+  max-width: 1280px;
   margin: 0 auto;
-  padding: 20px;
-  border: 1px solid #e1e4e8;
-  border-radius: 6px;
-  background-color: #f6f8fa;
+  padding: 24px 32px;
+  box-sizing: border-box;
 }
 
-.repository-header {
-  border-bottom: 1px solid #e1e4e8;
-  padding-bottom: 10px;
-  margin-bottom: 20px;
+.header-container {
+  width: 100%;
+  max-width: 1280px;
+  margin: 0 auto;
+  padding: 0 32px 16px 32px;
 }
 
-.repository-title {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
+.nav-container {
+  width: 100%;
+  max-width: 1280px;
+  margin: 16px auto;
+  padding: 0 32px;
 }
 
-.repository-title h1 {
+.repo-header {
+  width: 70%;
+  min-width: 600px;
+}
+
+.repo-title {
+  margin: 0;
   font-size: 24px;
-  margin: 0;
-  display: flex;
-  align-items: center;
-  gap: 10px;
+  font-weight: 600;
+  color: var(--color-text-1);
+
+  .owner-name {
+    color: var(--color-text-1);
+  }
+
+  .divider {
+    color: var(--color-text-3);
+    padding: 0 4px;
+  }
+
+  .repo-name {
+    color: var(--color-text-1);
+    font-weight: 600;
+  }
 }
 
-.repository-visibility {
-  font-size: 14px;
-  color: #586069;
-  background-color: #e1e4e8;
-  padding: 2px 6px;
-  border-radius: 3px;
-}
-
-.repository-meta-inline {
-  display: flex;
-  gap: 15px;
-}
-
-.repository-owner {
-  color: #586069;
-  font-size: 14px;
-}
-
-.meta-item {
-  background-color: #e1e4e8;
-  padding: 5px 10px;
-  border-radius: 3px;
-}
-
-.repository-actions {
-  display: flex;
-  gap: 10px;
-  margin-bottom: 20px;
-  position: relative;
-}
-
-.branch-button,
-.code-button {
-  padding: 6px 12px;
-  font-size: 14px;
-  font-weight: 500;
-  color: #fff;
-  background-color: #0366d6;
-  border: none;
-  border-radius: 6px;
-  cursor: pointer;
-}
-
-.branch-button:hover,
-.code-button:hover {
-  background-color: #0056b3;
-}
-
-.branch-dropdown,
-.code-dropdown {
-  position: absolute;
-  top: 100%; /* Position dropdown below the button */
-  left: 0;
-  width: 30%;
-  background-color: #fff;
-  border: 1px solid #e1e4e8;
-  border-radius: 6px;
-  padding: 10px;
-  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
-  z-index: 1000;
-  margin: 0;
-  padding: 5px 0;
-  cursor: pointer;
-}
-
-.code-dropdown {
-  left: 13%;
-  right: 0;
-}
-
-.dropdown-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 5px 5px; /* Increased padding for more space */
-  border-bottom: 1px solid #e1e4e8;
-  font-weight: bold;
-  gap: 20px; /* Add gap for spacing between elements */
-}
-
-.close-icon {
-  cursor: pointer;
-  font-size: 14px;
-}
-
-.branch-search {
-  width: 95%;
-  padding: 5px 10px;
-  margin: 0 auto 5px auto;
-  border: 1px solid #e1e4e8;
-  border-radius: 4px;
-  background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="gray" class="bi bi-search" viewBox="0 0 16 16"><path d="M11.742 10.344a6.5 6.5 0 1 0-1.397 1.398h-.001c.03.04.062.078.098.115l3.85 3.85a1 1 0 0 0 1.415-1.414l-3.85-3.85a1.007 1.007 0 0 0-.115-.1zm-5.442 1.398a5.5 5.5 0 1 1 0-11 5.5 5.5 0 0 1 0 11z"/></svg>');
-  background-repeat: no-repeat;
-  background-position: 10px center;
-  padding-left: 30px; /* Add padding to make space for the icon */
-}
-
-.default-branch {
-  font-weight: bold;
-}
-
-.tag {
-  background-color: #0366d6;
-  color: #fff;
-  padding: 2px 4px;
-  border-radius: 3px;
+.visibility-tag {
   font-size: 12px;
-  margin-left: 5px;
-}
-.repository-description {
-  margin-bottom: 20px;
-}
-
-.repository-directory {
-  border-top: 1px solid #e1e4e8;
-  padding-top: 10px;
-  margin-top: 20px;
+  height: 24px;
+  padding: 0 8px;
+  border-radius: 12px;
 }
 
-.repository-directory h2 {
-  font-size: 18px;
-  margin: 0 0 10px 0;
+.repo-description {
+  margin-top: 8px;
+  font-size: 16px;
+  color: var(--color-text-2);
 }
 
-.meta-item button {
-  background: none;
-  border: none;
-  color: #0366d6;
-  cursor: pointer;
-  font-size: inherit;
-  padding: 0;
+.repo-stats {
+  flex-shrink: 0;
+  margin-left: auto;
+  .stat-item {
+    padding: 4px 12px;
+    background-color: var(--color-fill-2);
+    border-radius: 6px;
+
+    .stat-icon {
+      color: var(--color-text-2);
+    }
+
+    .stat-number {
+      font-weight: 600;
+      margin: 0 4px;
+    }
+
+    .stat-label {
+      color: var(--color-text-2);
+    }
+
+    &:hover {
+      background-color: var(--color-fill-3);
+    }
+  }
 }
 
-.meta-item button:hover {
-  text-decoration: underline;
+.action-bar {
+  width: 100%;
+  max-width: 1280px;
+  margin: 16px auto;
+  padding: 0 32px;
+
+  .branch-selector,
+  .code-selector {
+    padding: 4px 12px;
+    height: 32px;
+  }
+}
+
+.dropdown-content {
+  width: 500px;
+}
+
+.file-browser {
+  width: 100%;
+  margin: 24px auto;
+  padding: 0 32px;
+
+  :deep(.arco-list-content) {
+    width: 100%;
+    padding: 0 32px;
+  }
+
+  .file-icon {
+    color: var(--color-text-3);
+  }
+
+  .file-name {
+    font-weight: 500;
+  }
+
+  .commit-message {
+    color: var(--color-text-2);
+    margin-left: 16px;
+  }
+
+  .commit-time {
+    color: var(--color-text-3);
+    margin-left: auto;
+  }
 }
 </style>
