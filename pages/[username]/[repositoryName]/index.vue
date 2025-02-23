@@ -7,6 +7,7 @@ const branches = ref(["master", "develop", "feature-1", "feature-2"]); // Exampl
 const selectedTag = ref("");
 const showTags = ref(false);
 const tags = ref(["v1.0", "v1.1", "v2.0"]); // Example tags
+const userInfo=useUserInfo()
 const filteredBranches = computed(() => {
   return branches.value.filter((branch) =>
     branch.toLowerCase().includes(branchSearch.value.toLowerCase()),
@@ -87,8 +88,8 @@ onMounted(async () => {
               </a-button>
             </NuxtLink>
             <NuxtLink to="/settings/keys">
-              <a-avatar>
-                {{ repository.username }}
+              <a-avatar v-if="userInfo.username">
+                {{ userInfo.username }}
               </a-avatar>
             </NuxtLink>
           </a-space>
