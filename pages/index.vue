@@ -1,7 +1,6 @@
 <script setup lang="ts">
 import type { PaginationProps } from "@arco-design/web-vue";
 
-const userAuth = useUserAuth();
 const userInfo = useUserInfo();
 
 const userRepositoryList = ref<RepositoryVO[]>([]);

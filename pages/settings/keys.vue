@@ -249,7 +249,7 @@ onMounted(async () => {
 </script>
 
 <template>
-  <div class="max-w-screen-lg mx-auto">
+  <div class="max-w-screen-lg mx-10">
     <a-typography-title :heading="3" v-if="userInfo.username">
       <a-row justify="space-between">
         <a-col flex="none"> {{ userInfo.username }}的公钥 </a-col>
