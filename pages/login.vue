@@ -1,5 +1,4 @@
 <script setup lang="ts">
-
 const signinWidth = "300px";
 const router = useRouter();
 
@@ -26,7 +25,7 @@ const handleSignin = async () => {
   Message.loading({ id: "sign-in", content: "正在登录..." });
   const apiURL = new URL(
     APIPaths.AUTHENTICATION_SIGN_IN_API_PATH,
-    window.origin
+    window.origin,
   );
   try {
     const resp = await $fetch.raw(apiURL.toString(), {
@@ -36,8 +35,8 @@ const handleSignin = async () => {
         userPassword: form.password,
       }),
     });
-    const accessToken = resp.headers.get("access-token")
-    const refreshToken = resp.headers.get("refresh-token")
+    const accessToken = resp.headers.get("access-token");
+    const refreshToken = resp.headers.get("refresh-token");
     if (!accessToken || !refreshToken) {
       throw new Error();
     }
@@ -63,20 +62,25 @@ const handleSignin = async () => {
 </script>
 
 <template>
-  <div class="flex flex-col justify-center h-screen">
+  <div
+    class="flex flex-col items-center border border-slate-200 rounded-lg shadow-lg mx-auto p-8"
+  >
     <a-typography-title class="text-center">登录</a-typography-title>
-    <div class="border border-slate-200 rounded-lg shadow-lg mx-auto p-8">
-      <a-form :model="form" :style="{ width: signinWidth }" layout="vertical" @submit="handleSignin">
-        <a-form-item field="username" label="用户名">
-          <a-input v-model="form.username" />
-        </a-form-item>
-        <a-form-item field="password" label="密码">
-          <a-input-password v-model="form.password" />
-        </a-form-item>
-        <a-form-item>
-          <a-button class="ml-auto" html-type="submit">登录</a-button>
-        </a-form-item>
-      </a-form>
-    </div>
+    <a-form
+      :model="form"
+      :style="{ width: signinWidth }"
+      layout="vertical"
+      @submit="handleSignin"
+    >
+      <a-form-item field="username" label="用户名">
+        <a-input v-model="form.username" />
+      </a-form-item>
+      <a-form-item field="password" label="密码">
+        <a-input-password v-model="form.password" />
+      </a-form-item>
+      <a-form-item>
+        <a-button class="ml-auto" html-type="submit">登录</a-button>
+      </a-form-item>
+    </a-form>
   </div>
 </template>

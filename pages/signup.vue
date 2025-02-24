@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { type FormInstance, type FieldRule } from "@arco-design/web-vue";
 
-const formRef = ref<FormInstance>()
+const formRef = ref<FormInstance>();
 
 const signupWidth = "400px";
 
@@ -49,16 +49,19 @@ const usernameRules: FieldRule[] = [
       const username = value || "";
       const apiURL = new URL(
         APIPaths.USER_CHECK_USERNAME_VALIDITY_API_PATH,
-        window.origin
+        window.origin,
       );
       apiURL.searchParams.append("username", username);
       await $fetch(apiURL.toString())
-        .then(() => { formState.username = true; cb() })
+        .then(() => {
+          formState.username = true;
+          cb();
+        })
         .catch((error) => {
           formState.username = false;
           const message = error.data["message"];
           cb(message);
-        })
+        });
     },
   },
 ];
@@ -69,15 +72,15 @@ const passwordRules: FieldRule[] = [
       const password = value || "";
       const apiURL = new URL(
         APIPaths.USER_CHECK_USER_PASSWORD_VALIDITY_API_PATH,
-        window.origin
+        window.origin,
       );
       apiURL.searchParams.append("userPassword", password);
       await $fetch(apiURL.toString())
         .then(() => {
           formState.password = true;
-          cb()
+          cb();
           if (form.confirmPassword) {
-            formRef.value?.validateField('confirmPassword')
+            formRef.value?.validateField("confirmPassword");
           }
         })
         .catch((error) => {
@@ -97,8 +100,8 @@ const confirmPasswordRules: FieldRule[] = [
         cb("两次输入密码不一致");
         return;
       }
-        formState.confirmPassword = true;
-      cb()
+      formState.confirmPassword = true;
+      cb();
     },
   },
 ];
@@ -109,7 +112,7 @@ const emailRules: FieldRule[] = [
       const email = value ? value : "";
       const apiURL = new URL(
         APIPaths.USER_CHECK_EMAIL_VALIDITY_API_PATH,
-        window.origin
+        window.origin,
       );
       apiURL.searchParams.append("email", email);
       await $fetch(apiURL.toString())
@@ -163,7 +166,7 @@ const handleGetVerificationCode = () => {
   Message.loading("正在发送验证码...");
   const apiURL = new URL(
     APIPaths.AUTHENTICATION_SEND_EMAIL_VERIFICATION_CODE_API_PATH,
-    window.origin
+    window.origin,
   );
   apiURL.searchParams.append("email", form.email);
   $fetch(apiURL.toString())
@@ -188,7 +191,7 @@ const handleSignup = () => {
   Message.loading("正在注册...");
   const apiURL = new URL(
     APIPaths.AUTHENTICATION_SIGN_UP_API_PATH,
-    window.origin
+    window.origin,
   );
   $fetch(apiURL.toString(), {
     method: "POST",
@@ -212,41 +215,56 @@ const handleSignup = () => {
 </script>
 
 <template>
-  <div class="flex flex-col justify-center h-screen">
+  <div
+    class="flex-col flex items-center border border-slate-200 rounded-lg shadow-lg mx-auto p-8"
+  >
     <a-typography-title class="text-center">注册</a-typography-title>
-    <div class="border border-slate-200 rounded-lg shadow-lg mx-auto p-8">
-      <a-form :model="form" :rules="formRules" :style="{ width: signupWidth }" layout="vertical" ref="formRef"
-        @submit-success="handleSignup">
-        <a-form-item field="username" label="用户名" validate-trigger="blur">
-          <a-input v-model="form.username" placeholder="请输入用户名" />
-        </a-form-item>
-        <a-form-item field="password" label="密码" validate-trigger="blur">
-          <a-input-password v-model="form.password" placeholder="请输入密码" />
-        </a-form-item>
-        <a-form-item field="confirmPassword" label="确认密码" validate-trigger="blur">
-          <a-input-password v-model="form.confirmPassword" placeholder="请再一次确认密码" />
-        </a-form-item>
-        <a-form-item field="email" label="邮箱" validate-trigger="blur">
-          <a-input v-model="form.email" placeholder="请输入邮箱" />
-        </a-form-item>
-        <a-form-item field="verificationCode" label="验证码">
-          <a-input v-model="form.verificationCode" :max-length="6" />
-          <a-button type="primary" :disabled="!formState.canResendCode || !formState.email"
-            @click="handleGetVerificationCode">
-            {{
-              formState.resendCodeCountdown > 0
-                ? `${formState.resendCodeCountdown}秒后重试`
-                : "获取验证码"
-            }}
-          </a-button>
-        </a-form-item>
-        <a-form-item>
-          <a-button class="ml-auto" html-type="submit" :disabled="!isFormValid">
-            注册
-          </a-button>
-        </a-form-item>
-      </a-form>
-    </div>
+    <a-form
+      :model="form"
+      :rules="formRules"
+      :style="{ width: signupWidth }"
+      layout="vertical"
+      ref="formRef"
+      @submit-success="handleSignup"
+    >
+      <a-form-item field="username" label="用户名" validate-trigger="blur">
+        <a-input v-model="form.username" placeholder="请输入用户名" />
+      </a-form-item>
+      <a-form-item field="password" label="密码" validate-trigger="blur">
+        <a-input-password v-model="form.password" placeholder="请输入密码" />
+      </a-form-item>
+      <a-form-item
+        field="confirmPassword"
+        label="确认密码"
+        validate-trigger="blur"
+      >
+        <a-input-password
+          v-model="form.confirmPassword"
+          placeholder="请再一次确认密码"
+        />
+      </a-form-item>
+      <a-form-item field="email" label="邮箱" validate-trigger="blur">
+        <a-input v-model="form.email" placeholder="请输入邮箱" />
+      </a-form-item>
+      <a-form-item field="verificationCode" label="验证码">
+        <a-input v-model="form.verificationCode" :max-length="6" />
+        <a-button
+          type="primary"
+          :disabled="!formState.canResendCode || !formState.email"
+          @click="handleGetVerificationCode"
+        >
+          {{
+            formState.resendCodeCountdown > 0
+              ? `${formState.resendCodeCountdown}秒后重试`
+              : "获取验证码"
+          }}
+        </a-button>
+      </a-form-item>
+      <a-form-item>
+        <a-button class="ml-auto" html-type="submit" :disabled="!isFormValid">
+          注册
+        </a-button>
+      </a-form-item>
+    </a-form>
   </div>
 </template>
-

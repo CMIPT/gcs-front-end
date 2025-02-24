@@ -7,7 +7,6 @@ const branches = ref(["master", "develop", "feature-1", "feature-2"]); // Exampl
 const selectedTag = ref("");
 const showTags = ref(false);
 const tags = ref(["v1.0", "v1.1", "v2.0"]); // Example tags
-const userInfo=useUserInfo()
 const filteredBranches = computed(() => {
   return branches.value.filter((branch) =>
     branch.toLowerCase().includes(branchSearch.value.toLowerCase()),
@@ -48,54 +47,47 @@ onMounted(async () => {
   await initialize();
   if (!useUserInfo().value.id) {
     useRouter().push("/");
+    return
   }
   const username = route.params.username as string;
   const repositoryName = route.params.repositoryName as string;
   fetchRepositoryDetails(username, repositoryName);
 });
+
+definePageMeta({
+  layout: false,
+});
 </script>
 
 <template>
-  <a-layout v-if="repository">
-    <!-- Main Header -->
-    <a-layout-header class="py-4 px-4">
-      <!-- Top Header Row -->
-      <a-row>
-        <a-col flex="auto" class="flex justify-start">
+  <NuxtPage />
+  <a-layout>
+    <a-layout-header class="py-4 px-6 items-center">
+      <a-row justify="space-between">
+        <a-col flex="none">
           <a-space>
-            <NuxtLink to="/">
-              <Icon name="fa6-solid:code" />
-              GCS
-            </NuxtLink>
-            <a-breadcrumb>
-              <a-breadcrumb-item>
-                <NuxtLink :to="`/${repository.username}`">
+            <GCSBand />
+            <a-breadcrumb v-if="repository">
+              <NuxtLink :to="`/${repository.username}`">
+                <a-breadcrumb-item>
                   {{ repository.username }}
-                </NuxtLink>
-              </a-breadcrumb-item>
-              <a-breadcrumb-item>
-                {{ repository.repositoryName }}
-              </a-breadcrumb-item>
+                </a-breadcrumb-item>
+              </NuxtLink>
+              <NuxtLink
+                :to="`/${repository.username}/${repository.repositoryName}`"
+              >
+                <a-breadcrumb-item>
+                  {{ repository.repositoryName }}
+                </a-breadcrumb-item>
+              </NuxtLink>
             </a-breadcrumb>
           </a-space>
         </a-col>
-        <a-col flex="auto" class="flex justify-end">
-          <a-space>
-            <NuxtLink to="/new">
-              <a-button type="outline" shape="round">
-                <template #icon><icon-plus /></template>
-                New
-              </a-button>
-            </NuxtLink>
-            <NuxtLink to="/settings/keys">
-              <a-avatar v-if="userInfo.username">
-                {{ userInfo.username }}
-              </a-avatar>
-            </NuxtLink>
-          </a-space>
+        <a-col flex="none">
+          <GCSUser />
         </a-col>
       </a-row>
-      <!-- Navigation Tabs in Header -->
+      <!-- TODO: adjust the position: padding -->
       <a-menu mode="horizontal" :default-selected-keys="['code']">
         <a-menu-item key="code">
           <template #icon><icon-code /></template>
@@ -112,15 +104,13 @@ onMounted(async () => {
       </a-menu>
     </a-layout-header>
 
-    <!-- Repository Content -->
-    <a-layout class="content-layout">
+    <a-layout v-if="repository" class="repository-detail">
       <a-layout-content>
-        <!-- Repo Header Section -->
-        <a-row class="mb-3">
-          <a-col flex="auto">
+        <a-row justify="space-between">
+          <a-col flex="none">
             <a-space>
               <a-avatar :size="30">
-                {{ repository.username }}
+                {{ repository.username.substring(0, 3).toUpperCase() }}
               </a-avatar>
               <a-typography-text :bold="true">
                 {{ repository.repositoryName }}
@@ -134,7 +124,7 @@ onMounted(async () => {
               </a-tag>
             </a-space>
           </a-col>
-          <a-col flex="auto" class="flex justify-end">
+          <a-col flex="none">
             <a-space>
               <a-tooltip content="Stars">
                 <a-button shape="round">
@@ -157,10 +147,8 @@ onMounted(async () => {
             </a-space>
           </a-col>
         </a-row>
-
-        <a-row class="mb-3">
-          <a-col flex="auto">
-            <!-- Branch/Code Section -->
+        <a-row justify="space-between">
+          <a-col flex="none">
             <a-dropdown position="bl">
               <a-button type="outline" shape="round">
                 <template #icon>
@@ -211,12 +199,11 @@ onMounted(async () => {
               </template>
             </a-dropdown>
           </a-col>
-          <a-col flex="auto" class="flex justify-end">
-            <!-- Code URL Dropdown -->
+          <a-col flex="none">
             <a-dropdown position="bl">
               <a-button type="outline" shape="round">
                 <template #icon><icon-code /></template>
-                Code
+                克隆
                 <icon-down />
               </a-button>
               <template #content>
@@ -236,42 +223,39 @@ onMounted(async () => {
             </a-dropdown>
           </a-col>
         </a-row>
-
+        <!-- TODO: next version file explorer -->
         <a-list>
           <a-list-item v-for="item in 5" :key="item">
-            <a-row :wrap="false">
-              <a-col flex="auto" class="flex justify-start">
+            <a-row justify="space-between">
+              <a-col flex="none">
                 <a-typography-text>
                   <icon-file />
                   filename
                 </a-typography-text>
               </a-col>
-              <a-col flex="auto" class="flex justify-center">
+              <a-col flex="none">
                 <a-typography-text> Initial commit </a-typography-text>
               </a-col>
-              <a-col flex="auto" class="flex justify-end">
+              <a-col flex="none">
                 <a-typography-text> 2 hours ago </a-typography-text>
               </a-col>
             </a-row>
           </a-list-item>
         </a-list>
       </a-layout-content>
-      <!-- Description Sidebar -->
       <a-layout-sider>
         <a-typography-title :heading="5"> 介绍 </a-typography-title>
         {{ repository.repositoryDescription }}
       </a-layout-sider>
     </a-layout>
-    <a-layout-footer>
-      <div class="flex justify-center items-center pt-10">
-        © 2024 GCS. All rights reserved
-      </div>
-    </a-layout-footer>
+
+    <GCSFooter />
   </a-layout>
 </template>
 
 <style scoped>
-.content-layout {
-  padding: 0 2.5%;
+.repository-detail {
+  width: 90%;
+  margin: auto;
 }
 </style>

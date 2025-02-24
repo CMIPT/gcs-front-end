@@ -90,8 +90,8 @@ const handleNewRepository = async () => {
 </script>
 
 <template>
+  <a-typography-title :heading="2"> 新建仓库 </a-typography-title>
   <div class="flex flex-col items-center mx-auto my-10">
-    <a-typography-title :heading="2"> 新建仓库 </a-typography-title>
     <a-form
       :model="form"
       layout="vertical"
