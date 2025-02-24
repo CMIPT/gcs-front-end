@@ -47,74 +47,31 @@ const paginationProps = computed(() => {
 </script>
 
 <template>
-  <a-layout>
-    <a-layout-header>
-      <div
-        class="flex items-center h-16 px-6 py-4 border-b border-solid border-slate-200"
-      >
-        <!-- 网页图标 -->
-        <NuxtLink to="/">
-          <Icon name="fa6-solid:code" />
+  <div class="max-w-screen-lg mx-auto">
+    <a-typography-title :heading="3" v-if="userInfo.username">
+      {{ userInfo.username }}的项目
+    </a-typography-title>
+    <a-list
+      :bordered="false"
+      :data="userRepositoryList"
+      :pagination-props="paginationProps"
+    >
+      <template #item="{ item }">
+        <NuxtLink :to="`/${item.username}/${item.repositoryName}`">
+          <a-list-item action-layout="vertical">
+            <a-list-item-meta
+              :title="`${item.username}/${item.repositoryName}`"
+              :description="item.repositoryDescription"
+            >
+              <template #avatar>
+                <a-avatar v-if="userInfo.username">
+                  {{ userInfo.username.substring(0, 3).toUpperCase() }}
+                </a-avatar>
+              </template>
+            </a-list-item-meta>
+          </a-list-item>
         </NuxtLink>
-        <NuxtLink to="/" class="ml-4"> GCS </NuxtLink>
-        <div
-          class="flex gap-2 items-center ml-auto"
-          v-if="!userAuth?.accessToken"
-        >
-          <NuxtLink to="/login">
-            <AButton type="text">登录</AButton>
-          </NuxtLink>
-          <NuxtLink to="/signup">
-            <AButton type="text">注册</AButton>
-          </NuxtLink>
-        </div>
-        <div class="flex gap-2 items-center ml-auto" v-else>
-          <NuxtLink to="/new">
-            <a-button type="text">新建仓库</a-button>
-          </NuxtLink>
-          <!-- TODO: 用户头像 -->
-          <NuxtLink to="/settings/keys">
-            <a-avatar v-if="userInfo.username">
-              {{ userInfo.username }}
-            </a-avatar>
-          </NuxtLink>
-        </div>
-      </div>
-    </a-layout-header>
-    <a-layout-content>
-      <div class="max-w-screen-lg mx-auto">
-        <a-typography-title :heading="3" v-if="userInfo.username">
-          {{ userInfo.username }}的项目
-        </a-typography-title>
-        <a-list
-          :bordered="false"
-          :data="userRepositoryList"
-          :pagination-props="paginationProps"
-        >
-          <template #item="{ item }">
-            <NuxtLink :to="`/${item.username}/${item.repositoryName}`">
-              <a-list-item class="list-demo-item" action-layout="vertical">
-                <a-list-item-meta
-                  :title="`${item.username}/${item.repositoryName}`"
-                  :description="item.repositoryDescription"
-                >
-                  <template #avatar>
-                    <!-- TODO: 用户头像 -->
-                    <a-avatar v-if="userInfo.username">
-                      {{ userInfo.username }}
-                    </a-avatar>
-                  </template>
-                </a-list-item-meta>
-              </a-list-item>
-            </NuxtLink>
-          </template>
-        </a-list>
-      </div>
-    </a-layout-content>
-    <a-layout-footer>
-      <div class="flex justify-center items-center pt-10">
-        © 2024 GCS. All rights reserved
-      </div>
-    </a-layout-footer>
-  </a-layout>
+      </template>
+    </a-list>
+  </div>
 </template>
