@@ -10,7 +10,6 @@ type SshKeyForm = {
   publicKey: string;
 };
 
-const isOkButtonLoading = ref(false);
 const router = useRouter();
 const userInfo = useUserInfo();
 const defaultPageSize = ref(10);
@@ -137,7 +136,7 @@ const deleteSSH = async (index: number) => {
   Modal.confirm({
     title: "确认删除",
     content: `您确定要删除公钥 "${sshKey.name}" 吗？`,
-    onOk: async () => {
+    onBeforeOk: async () => {
       const apiURL = new URL(
         APIPaths.SSH_KEY_DELETE_SSH_KEY_API_PATH,
         window.origin,
@@ -156,15 +155,12 @@ const deleteSSH = async (index: number) => {
           const message = error.data["message"];
           Message.error({ id: "delete-ssh-key", content: message });
         });
+      return true;
     },
   });
 };
 
 const handleAddOrEditSSHKeyConfirm = async () => {
-  if (isOkButtonLoading.value) {
-    return;
-  }
-  isOkButtonLoading.value = true;
   if (editingIndex.value !== null) {
     // Update SSH key
     const apiURL = new URL(
@@ -180,11 +176,9 @@ const handleAddOrEditSSHKeyConfirm = async () => {
       form.value.name === sshKey.name &&
       form.value.publicKey === sshKey.publicKey
     ) {
-      isModalVisible.value = false;
-      isOkButtonLoading.value = false;
-      return;
+      return true;
     }
-    await fetchWithRetry(apiURL.toString(), {
+    return await fetchWithRetry(apiURL.toString(), {
       method: "POST",
       body: {
         id: sshKey.id,
@@ -194,12 +188,13 @@ const handleAddOrEditSSHKeyConfirm = async () => {
     })
       .then(() => {
         Message.success({ content: "更新成功" });
-        isModalVisible.value = false;
         fetchSshKeys(currentPage.value);
+        return true;
       })
       .catch((error) => {
         const message = error.data["message"];
         Message.error({ id: "update-ssh-key", content: message });
+        return false;
       });
   } else {
     // Add new SSH key
@@ -207,7 +202,7 @@ const handleAddOrEditSSHKeyConfirm = async () => {
       APIPaths.SSH_KEY_UPLOAD_SSH_KEY_API_PATH,
       window.origin,
     );
-    await fetchWithRetry(apiURL.toString(), {
+    return await fetchWithRetry(apiURL.toString(), {
       method: "POST",
       body: {
         name: form.value.name,
@@ -216,15 +211,15 @@ const handleAddOrEditSSHKeyConfirm = async () => {
     })
       .then(() => {
         Message.success({ content: "添加成功" });
-        isModalVisible.value = false;
         fetchSshKeys(currentPage.value);
+        return true;
       })
       .catch((error) => {
         const message = error.data["message"];
         Message.error({ id: "add-ssh-key", content: message });
+        return false;
       });
   }
-  isOkButtonLoading.value = false;
 };
 
 const handleAddOrEditSSHKeyCancel = () => {
@@ -247,40 +242,42 @@ onMounted(async () => {
   await initialize();
   if (!userInfo.value.id) {
     router.push("/");
+    return
   }
   fetchSshKeys(currentPage.value);
 });
 </script>
 
 <template>
-  <h1>Profile</h1>
-  <a-button type="primary" @click="addSSH">添加公钥</a-button>
-  <a-list
-    :bordered="false"
-    :data="userSshKeyList"
-    :pagination-props="paginationProps"
-  >
-    <template #item="{ item, index }">
-      <a-list-item
-        class="list-demo-item"
-        action-layout="vertical"
-        @click="editSSH(index)"
-      >
-        <a-list-item-meta :title="item.name" :description="item.publicKey" />
-        <template #actions>
-          <icon-edit />
-          <a-button type="text" @click.stop="deleteSSH(index)">
-            <icon-delete />
-          </a-button>
-        </template>
-      </a-list-item>
-    </template>
-  </a-list>
+  <div class="max-w-screen-lg mx-auto">
+    <a-typography-title :heading="3" v-if="userInfo.username">
+      <a-row justify="space-between">
+        <a-col flex="none"> {{ userInfo.username }}的公钥 </a-col>
+        <a-col flex="none">
+          <a-button type="primary" @click="addSSH">添加公钥</a-button>
+        </a-col>
+      </a-row>
+    </a-typography-title>
+    <a-list
+      :bordered="false"
+      :data="userSshKeyList"
+      :pagination-props="paginationProps"
+    >
+      <template #item="{ item, index }">
+        <a-list-item action-layout="vertical">
+          <a-list-item-meta :title="item.name" :description="item.publicKey" />
+          <template #actions>
+            <icon-edit @click="editSSH(index)" />
+            <icon-delete @click="deleteSSH(index)" />
+          </template>
+        </a-list-item>
+      </template>
+    </a-list>
+  </div>
   <a-modal
     title="添加公钥"
-    :visible="isModalVisible"
-    @ok="handleAddOrEditSSHKeyConfirm"
-    :ok-button-props="{ disabled: !isFormValid }"
+    v-model:visible="isModalVisible"
+    :on-before-ok="handleAddOrEditSSHKeyConfirm"
     @cancel="handleAddOrEditSSHKeyCancel"
   >
     <a-form :model="form" :rules="formRules" layout="vertical" ref="formRef">
@@ -293,28 +290,3 @@ onMounted(async () => {
     </a-form>
   </a-modal>
 </template>
-
-<style scoped>
-.list-demo-item {
-  cursor: pointer;
-  transition: background-color 0.3s;
-}
-
-.list-demo-item:hover {
-  background-color: #f5f5f5;
-}
-
-.list-demo-item a-icon {
-  margin-left: auto;
-  color: #1890ff;
-  transition: color 0.3s;
-}
-
-.list-demo-item:hover a-icon {
-  color: #40a9ff;
-}
-
-a-button {
-  margin-left: 8px;
-}
-</style>
