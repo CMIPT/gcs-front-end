@@ -2,6 +2,7 @@
 import type { FieldRule } from "@arco-design/web-vue";
 
 const formMaxWidth = "1000px";
+const loading = ref<boolean>(false);
 
 type NewRepositoryForm = {
   name: string;
@@ -65,7 +66,7 @@ onMounted(async () => {
 });
 
 const handleNewRepository = async () => {
-  Message.loading({ id: "new-repository", content: "正在新建仓库..." });
+  loading.value = true;
   const apiURL = new URL(
     APIPaths.REPOSITORY_CREATE_REPOSITORY_API_PATH,
     window.origin,
@@ -86,6 +87,7 @@ const handleNewRepository = async () => {
       router.push(userInfo.value.username + "/" + form.name);
     })
     .catch((error) => {
+      loading.value = false;
       const message = error.data["message"];
       Message.error({ id: "new-repository", content: message });
     });
@@ -146,6 +148,7 @@ const handleNewRepository = async () => {
           type="primary"
           html-type="submit"
           :disabled="!formState.name"
+          :loading="loading"
         >
           创建仓库
         </a-button>
