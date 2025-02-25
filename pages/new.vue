@@ -36,7 +36,7 @@ const nameRules: FieldRule[] = [
       );
       apiURL.searchParams.append("repositoryName", repositoryName);
       apiURL.searchParams.append("userId", userInfo.value.id);
-      await fetchWithRetry(apiURL.toString())
+      await $fetch(apiURL.toString())
         .then(() => {
           formState.name = true;
           cb();
@@ -57,7 +57,14 @@ const formRules = {
 onMounted(async () => {
   await initialize();
   if (!userInfo.value.id) {
-    router.push("/");
+    tryThrowAndShowError(
+      {
+        response: {
+          status: HTTPStatus.NOT_FOUND,
+        },
+      },
+      "页面未找到",
+    );
   }
 });
 
@@ -80,6 +87,7 @@ const handleNewRepository = async () => {
         id: "new-repository",
         content: "创建成功，跳转到主页",
       });
+    // TODO: go to the repository detail page
       router.push("/");
     })
     .catch((error) => {

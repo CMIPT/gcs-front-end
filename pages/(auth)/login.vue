@@ -18,6 +18,7 @@ onMounted(async () => {
   await initialize();
   if (userInfo.value.id) {
     router.push("/");
+    // TODO: add message
   }
 });
 

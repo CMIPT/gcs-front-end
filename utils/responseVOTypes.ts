@@ -23,7 +23,7 @@ export type RepositoryVO = {
   repositoryName: string;
   repositoryDescription: string;
   isPrivate: boolean;
-  userId: number;
+  userId: string;
   username: string;
   star: number;
   fork: number;
