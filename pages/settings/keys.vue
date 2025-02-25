@@ -11,6 +11,7 @@ type SshKeyForm = {
 };
 
 const router = useRouter();
+const route = useRoute();
 const userInfo = useUserInfo();
 const defaultPageSize = ref(10);
 const total = ref(0);
@@ -241,14 +242,9 @@ const paginationProps = computed(() => {
 onMounted(async () => {
   await initialize();
   if (!userInfo.value.id) {
-    tryThrowAndShowError(
-      {
-        response: {
-          status: HTTPStatus.NOT_FOUND,
-        },
-      },
-      "页面未找到",
-    );
+    useRedirectAfterLogin().value = route.fullPath;
+    router.push("/login");
+    return;
   }
   fetchSshKeys(currentPage.value);
 });

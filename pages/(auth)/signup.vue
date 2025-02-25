@@ -190,7 +190,7 @@ const handleGetVerificationCode = () => {
 const handleSignup = () => {
   Message.loading("正在注册...");
   const apiURL = new URL(
-    APIPaths.AUTHENTICATION_SIGN_UP_API_PATH,
+    APIPaths.USER_CREATE_USER_API_PATH,
     window.origin,
   );
   $fetch(apiURL.toString(), {

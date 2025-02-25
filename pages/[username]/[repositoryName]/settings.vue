@@ -1,11 +1,18 @@
 <script setup lang="ts">
 const route = useRoute();
+const router = useRouter();
 const selectedMenu = ref<string>(route.path.split("/")[4] || "settings");
 const props = defineProps(["repository"]);
 const repository = props.repository as RepositoryVO;
 const userInfo = useUserInfo();
 const pageFound = ref<boolean>();
 onMounted(async () => {
+  await initialize()
+  if (!useUserInfo().value.id) {
+    useRedirectAfterLogin().value = route.fullPath;
+    router.push("/login");
+    return
+  }
   if (repository.userId !== userInfo.value.id) {
     tryThrowAndShowError(
       {
