@@ -17,11 +17,11 @@ onMounted(async () => {
         userInfo.value = {} as UserVO;
         useUserAuth().value = {} as UserAuthState;
         Message.success("你已成功登出");
+        router.push("/");
       })
       .catch((error) => {
         Message.error(error.data.message);
       });
   }
-  router.push("/");
 });
 </script>

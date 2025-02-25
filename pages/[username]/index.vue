@@ -4,8 +4,9 @@ import type { PaginationProps } from "@arco-design/web-vue";
 const route = useRoute();
 const userInfo = useUserInfo();
 const username = ref<string>(route.params.username as string);
+const userFound = ref<boolean>();
 
-const userRepositoryList = ref<RepositoryVO[]>([]);
+const userRepositoryList = ref<RepositoryVO[]>();
 const total = ref(0);
 const currentPage = ref(1);
 const defaultPageSize = ref(10);
@@ -18,18 +19,28 @@ const fetchRepositories = async (page: number) => {
   apiURL.searchParams.append("username", username.value);
   apiURL.searchParams.append("page", page.toString());
   apiURL.searchParams.append("size", defaultPageSize.value.toString());
-  const response = await fetchWithRetry<PageVO<RepositoryVO>>(
-    apiURL.toString(),
-  );
-  userRepositoryList.value = response.records;
-  total.value = response.total;
+  await fetchWithRetry<PageVO<RepositoryVO>>(apiURL.toString())
+    .then((response) => {
+      userRepositoryList.value = response.records;
+      total.value = response.total;
+      userFound.value = true;
+    })
+    .catch((error) => {
+      tryThrowAndShowError(error, "没有找到用户：" + username.value);
+    });
 };
 
 onMounted(async () => {
   await initialize();
   if (!userInfo.value.id) {
-    useRouter().push("/");
-    return
+    tryThrowAndShowError(
+      {
+        response: {
+          status: HTTPStatus.NOT_FOUND,
+        },
+      },
+      "页面未找到",
+    );
   }
   fetchRepositories(currentPage.value);
 });
@@ -48,7 +59,7 @@ const paginationProps = computed(() => {
 </script>
 
 <template>
-  <div class="max-w-screen-lg mx-auto">
+  <div class="max-w-screen-lg mx-auto" v-if="userFound">
     <a-typography-title :heading="3">
       {{ username }} 的项目
     </a-typography-title>

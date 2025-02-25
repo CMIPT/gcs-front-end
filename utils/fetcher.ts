@@ -1,4 +1,3 @@
-
 export async function fetchWithRetry<T>(url: string, options: any = {}) {
   const userAuth = useUserAuth();
   if (!options.headers) {
@@ -10,9 +9,11 @@ export async function fetchWithRetry<T>(url: string, options: any = {}) {
   try {
     return await $fetch<T>(url, options);
   } catch (error: any) {
-    if (error.response?.status === HTTPStatus.UNAUTHORIZED ||
-      error.response?.status === HTTPStatus.BAD_REQUEST &&
-      error.data?.code === APIErrorCodes.TOKEN_NOT_FOUND) {
+    if (
+      error.response?.status === HTTPStatus.UNAUTHORIZED ||
+      (error.response?.status === HTTPStatus.BAD_REQUEST &&
+        error.data?.code === APIErrorCodes.TOKEN_NOT_FOUND)
+    ) {
       await refreshAccessToken();
       if (userAuth.value.accessToken) {
         sessionStorage.setItem("access-token", userAuth.value.accessToken);

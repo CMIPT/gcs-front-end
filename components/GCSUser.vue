@@ -2,7 +2,7 @@
 const userInfo = useUserInfo();
 </script>
 <template>
-  <a-space>
+  <a-space v-if="userInfo.id">
     <NuxtLink to="/new">
       <a-button type="outline" shape="round">
         <template #icon><icon-plus /></template>
@@ -10,7 +10,7 @@ const userInfo = useUserInfo();
       </a-button>
     </NuxtLink>
     <a-dropdown>
-      <a-avatar v-if="userInfo.username">
+      <a-avatar>
         {{ userInfo.username.substring(0, 3).toUpperCase() }}
         <template #trigger-icon>
           <icon-down />
