@@ -1,14 +1,15 @@
 <script setup lang="ts">
 const signinWidth = "300px";
 const router = useRouter();
+const loading = ref(false);
 
 type SigninForm = {
-  username: string;
+  usernameOrEmail: string;
   password: string;
 };
 
 const form = reactive<SigninForm>({
-  username: "",
+  usernameOrEmail: "",
   password: "",
 });
 
@@ -24,43 +25,9 @@ onMounted(async () => {
 });
 
 const handleSignin = async () => {
-  Message.loading({ id: "sign-in", content: "正在登录..." });
-  const apiURL = new URL(
-    APIPaths.AUTHENTICATION_SIGN_IN_API_PATH,
-    window.origin,
-  );
-  try {
-    const resp = await $fetch.raw(apiURL.toString(), {
-      method: "POST",
-      body: JSON.stringify({
-        username: form.username,
-        userPassword: form.password,
-      }),
-    });
-    const accessToken = resp.headers.get("access-token");
-    const refreshToken = resp.headers.get("refresh-token");
-    if (!accessToken || !refreshToken) {
-      throw new Error();
-    }
-    sessionStorage.setItem("access-token", accessToken);
-    localStorage.setItem("refresh-token", refreshToken);
-    useUserAuth().value = {
-      accessToken: accessToken,
-      refreshToken: refreshToken,
-    };
-    userInfo.value = resp._data as UserVO;
-    Message.success({ id: "sign-in", content: "登录成功，正在跳转……" });
-    const target = useRedirectAfterLogin().value;
-    useRedirectAfterLogin().value = "/";
-    router.push(target);
-  } catch (error: any) {
-    console.error(error);
-    if (!error.data) {
-      Message.error({ id: "sign-in", content: "登录失败" });
-      return;
-    }
-    const message = error.data["message"];
-    Message.error({ id: "sign-in", content: message });
+  loading.value = true;
+  if (!(await loginAndRedirect(form.usernameOrEmail, form.password, null))) {
+    loading.value = false;
   }
 };
 </script>
@@ -76,14 +43,24 @@ const handleSignin = async () => {
       layout="vertical"
       @submit="handleSignin"
     >
-      <a-form-item field="username" label="用户名">
-        <a-input v-model="form.username" />
+      <a-form-item field="usernameOrEmail" label="用户名/邮箱">
+        <a-input v-model="form.usernameOrEmail" />
       </a-form-item>
       <a-form-item field="password" label="密码">
         <a-input-password v-model="form.password" />
       </a-form-item>
       <a-form-item>
-        <a-button class="ml-auto" html-type="submit">登录</a-button>
+        <NuxtLink to="/reset-password">
+          <a-button class="ml-auto"> 忘记密码？ </a-button>
+        </NuxtLink>
+        <a-button
+          type="primary"
+          class="ml-auto"
+          html-type="submit"
+          :loading="loading"
+        >
+          登录</a-button
+        >
       </a-form-item>
     </a-form>
   </div>
