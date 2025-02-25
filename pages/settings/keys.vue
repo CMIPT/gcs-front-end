@@ -241,8 +241,14 @@ const paginationProps = computed(() => {
 onMounted(async () => {
   await initialize();
   if (!userInfo.value.id) {
-    router.push("/");
-    return
+    tryThrowAndShowError(
+      {
+        response: {
+          status: HTTPStatus.NOT_FOUND,
+        },
+      },
+      "页面未找到",
+    );
   }
   fetchSshKeys(currentPage.value);
 });
@@ -278,6 +284,7 @@ onMounted(async () => {
     title="添加公钥"
     v-model:visible="isModalVisible"
     :on-before-ok="handleAddOrEditSSHKeyConfirm"
+    :ok-button-props="{ disabled: !isFormValid }"
     @cancel="handleAddOrEditSSHKeyCancel"
   >
     <a-form :model="form" :rules="formRules" layout="vertical" ref="formRef">
