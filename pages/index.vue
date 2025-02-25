@@ -63,9 +63,7 @@ const paginationProps = computed(() => {
               :description="item.repositoryDescription"
             >
               <template #avatar>
-                <a-avatar v-if="userInfo.username">
-                  {{ userInfo.username.substring(0, 3).toUpperCase() }}
-                </a-avatar>
+                <a-avatar :image-url="item.avatarUrl" />
               </template>
             </a-list-item-meta>
           </a-list-item>

@@ -2,6 +2,7 @@
 const props = defineProps({
   repository: Object as () => RepositoryVO,
 });
+const userInfo = useUserInfo();
 const newRepositoryDescription = ref("");
 const repository = props.repository;
 const isModalVisible = ref(false);
@@ -62,9 +63,7 @@ const handleUpdateRepositoryDescription = async () => {
     <a-row justify="space-between">
       <a-col flex="none">
         <a-space>
-          <a-avatar :size="30">
-            {{ repository.username.substring(0, 3).toUpperCase() }}
-          </a-avatar>
+          <a-avatar :size="30" :image-url="repository.avatarUrl"/>
           <a-typography-text :bold="true">
             {{ repository.repositoryName }}
           </a-typography-text>
@@ -197,6 +196,7 @@ const handleUpdateRepositoryDescription = async () => {
         <a-col flex="none"> 介绍 </a-col>
         <a-col flex="none">
           <a-button
+            v-if="repository.userId === userInfo.id"
             type="text"
             shape="circle"
             @click="
