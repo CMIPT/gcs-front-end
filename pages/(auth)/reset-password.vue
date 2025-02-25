@@ -1,71 +1,42 @@
 <script setup lang="ts">
 import { type FormInstance, type FieldRule } from "@arco-design/web-vue";
+const resetPasswordWidth = "400px";
 
 const formRef = ref<FormInstance>();
-const signupLoading = ref<boolean>(false);
+const resetLoading = ref<boolean>(false);
 const sendCodeLoading = ref<boolean>(false);
-const router = useRouter();
 
-const signupWidth = "400px";
-
-type SignUpForm = {
-  username: string;
+type ResetPasswordForm = {
+  email: string;
   password: string;
   confirmPassword: string;
-  email: string;
   verificationCode: string;
 };
 
-type SignupFormState = {
-  username: boolean;
+type ResetPasswordFormState = {
+  email: boolean;
   password: boolean;
   confirmPassword: boolean;
-  email: boolean;
   verificationCode: boolean;
   canResendCode: boolean;
   resendCodeCountdown: number;
 };
 
-const form = reactive<SignUpForm>({
-  username: "",
+const form = reactive<ResetPasswordForm>({
+  email: "",
   password: "",
   confirmPassword: "",
-  email: "",
   verificationCode: "",
 });
 
-const formState = reactive<SignupFormState>({
-  username: false,
+const formState = reactive<ResetPasswordFormState>({
+  email: false,
   password: false,
   confirmPassword: false,
-  email: false,
   verificationCode: false,
   canResendCode: true,
   resendCodeCountdown: 0,
 });
-
-const usernameRules: FieldRule[] = [
-  {
-    validator: async (value, cb) => {
-      const username = value || "";
-      const apiURL = new URL(
-        APIPaths.USER_CHECK_USERNAME_VALIDITY_API_PATH,
-        window.origin,
-      );
-      apiURL.searchParams.append("username", username);
-      await $fetch(apiURL.toString())
-        .then(() => {
-          formState.username = true;
-          cb();
-        })
-        .catch((error) => {
-          formState.username = false;
-          const message = error.data["message"];
-          cb(message);
-        });
-    },
-  },
-];
 
 const passwordRules: FieldRule[] = [
   {
@@ -95,7 +66,7 @@ const confirmPasswordRules: FieldRule[] = [
 const emailRules: FieldRule[] = [
   {
     validator: async (value, cb) => {
-      formState.email = await emailValidator(value, cb);
+      formState.email = await emailValidator(value, cb, true);
     },
   },
 ];
@@ -109,7 +80,6 @@ const verificationCodeRules: FieldRule[] = [
 ];
 
 const formRules = {
-  username: usernameRules,
   password: passwordRules,
   confirmPassword: confirmPasswordRules,
   email: emailRules,
@@ -118,7 +88,6 @@ const formRules = {
 
 const isFormValid = computed(() => {
   return (
-    formState.username &&
     formState.password &&
     formState.confirmPassword &&
     formState.email &&
@@ -126,7 +95,31 @@ const isFormValid = computed(() => {
   );
 });
 
-const handleGetVerificationCode = async () => {
+const handleResetPassword = async () => {
+  resetLoading.value = true;
+  const apiURL = new URL(
+    APIPaths.USER_UPDATE_USER_PASSWORD_WITH_EMAIL_VERIFICATION_CODE_API_PATH,
+    window.origin,
+  );
+  apiURL.searchParams.append("email", form.email);
+  apiURL.searchParams.append("newPassword", form.password);
+  apiURL.searchParams.append("emailVerificationCode", form.verificationCode);
+  await $fetch
+    .raw(apiURL.toString(), {
+      method: "POST",
+    })
+    .then(async () => {
+      Message.success("密码重置成功，登录中……");
+      await loginAndRedirect(form.email, form.password, "/login");
+    })
+    .catch((error) => {
+      resetLoading.value = false;
+      const message = error.data["message"];
+      Message.error(message);
+    });
+};
+
+const handleGetVerificationCode = async() => {
   sendCodeLoading.value = true;
   formState.canResendCode = false;
   const apiURL = new URL(
@@ -154,46 +147,20 @@ const handleGetVerificationCode = async () => {
       sendCodeLoading.value = false;
     });
 };
-const handleSignup = async () => {
-  signupLoading.value = true;
-  const apiURL = new URL(APIPaths.USER_CREATE_USER_API_PATH, window.origin);
-  await $fetch(apiURL.toString(), {
-    method: "POST",
-    body: JSON.stringify({
-      username: form.username,
-      userPassword: form.password,
-      email: form.email,
-      emailVerificationCode: form.verificationCode,
-    }),
-  })
-    .then(async () => {
-      Message.success("注册成功，登录中……");
-      await loginAndRedirect(form.username, form.password, "/login");
-    })
-    .catch((error) => {
-      signupLoading.value = false;
-      const message = error.data["message"];
-      Message.error(message);
-    });
-};
 </script>
-
 <template>
   <div
     class="flex-col flex items-center border border-slate-200 rounded-lg shadow-lg mx-auto p-8"
   >
-    <a-typography-title class="text-center">注册</a-typography-title>
+    <a-typography-title class="text-center">重置密码</a-typography-title>
     <a-form
       :model="form"
       :rules="formRules"
-      :style="{ width: signupWidth }"
+      :style="{ width: resetPasswordWidth }"
       layout="vertical"
       ref="formRef"
-      @submit-success="handleSignup"
+      @submit-success="handleResetPassword"
     >
-      <a-form-item field="username" label="用户名" validate-trigger="blur">
-        <a-input v-model="form.username" placeholder="请输入用户名" />
-      </a-form-item>
       <a-form-item field="password" label="密码" validate-trigger="blur">
         <a-input-password v-model="form.password" placeholder="请输入密码" />
       </a-form-item>
@@ -231,9 +198,9 @@ const handleSignup = async () => {
           class="ml-auto"
           html-type="submit"
           :disabled="!isFormValid"
-          :loading="signupLoading"
+          :loading="resetLoading"
         >
-          注册
+          重置密码
         </a-button>
       </a-form-item>
     </a-form>
