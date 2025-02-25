@@ -14,6 +14,8 @@ async function initializeUserInfo() {
   if (useUserInfo().value.id) {
     return;
   }
+  const auth = useUserAuth()
+  if (!auth.value.accessToken && !auth.value.refreshToken) { return }
   const apiURL = new URL(APIPaths.USER_GET_USER_API_PATH, window.origin);
   apiURL.searchParams.append("userType", "token");
   useUserInfo().value = await fetchWithRetry<UserVO>(apiURL.toString()).catch(

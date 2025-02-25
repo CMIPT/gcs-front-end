@@ -2,6 +2,7 @@
 import type { PaginationProps } from "@arco-design/web-vue";
 
 const route = useRoute();
+const router = useRouter();
 const userInfo = useUserInfo();
 const username = ref<string>(route.params.username as string);
 const userFound = ref<boolean>();
@@ -33,14 +34,9 @@ const fetchRepositories = async (page: number) => {
 onMounted(async () => {
   await initialize();
   if (!userInfo.value.id) {
-    tryThrowAndShowError(
-      {
-        response: {
-          status: HTTPStatus.NOT_FOUND,
-        },
-      },
-      "页面未找到",
-    );
+    useRedirectAfterLogin().value = route.fullPath;
+    router.push("/login");
+    return;
   }
   fetchRepositories(currentPage.value);
 });
