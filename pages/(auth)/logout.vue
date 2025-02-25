@@ -22,6 +22,8 @@ onMounted(async () => {
       .catch((error) => {
         Message.error(error.data.message);
       });
+  } else {
+    router.push("/")
   }
 });
 </script>

@@ -17,8 +17,9 @@ const userInfo = useUserInfo();
 onMounted(async () => {
   await initialize();
   if (userInfo.value.id) {
+    Message.info({ id: "sign-in", content: "你已登录，跳转到主页" });
     router.push("/");
-    // TODO: add message
+    return;
   }
 });
 
@@ -48,8 +49,10 @@ const handleSignin = async () => {
       refreshToken: refreshToken,
     };
     userInfo.value = resp._data as UserVO;
-    Message.success({ id: "sign-in", content: "登录成功，跳转到主页" });
-    router.push("/");
+    Message.success({ id: "sign-in", content: "登录成功，正在跳转……" });
+    const target = useRedirectAfterLogin().value;
+    useRedirectAfterLogin().value = "/";
+    router.push(target);
   } catch (error: any) {
     console.error(error);
     if (!error.data) {

@@ -11,6 +11,7 @@ type NewRepositoryForm = {
 
 const userInfo = useUserInfo();
 const router = useRouter();
+const route = useRoute();
 
 const form = reactive<NewRepositoryForm>({
   name: "",
@@ -56,15 +57,10 @@ const formRules = {
 
 onMounted(async () => {
   await initialize();
-  if (!userInfo.value.id) {
-    tryThrowAndShowError(
-      {
-        response: {
-          status: HTTPStatus.NOT_FOUND,
-        },
-      },
-      "页面未找到",
-    );
+  if (!useUserInfo().value.id) {
+    useRedirectAfterLogin().value = route.fullPath;
+    router.push("/login");
+    return;
   }
 });
 
@@ -85,10 +81,9 @@ const handleNewRepository = async () => {
     .then(() => {
       Message.success({
         id: "new-repository",
-        content: "创建成功，跳转到主页",
+        content: "创建成功，跳转到仓库主页",
       });
-    // TODO: go to the repository detail page
-      router.push("/");
+      router.push(userInfo.value.username + "/" + form.name);
     })
     .catch((error) => {
       const message = error.data["message"];

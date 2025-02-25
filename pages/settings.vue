@@ -1,22 +1,20 @@
 <script setup lang="ts">
 const route = useRoute();
+const router = useRouter();
 const selectedMenu = ref<string>(route.path.split("/")[2] || "settings");
-onMounted(() => {
+const userInfo = useUserInfo()
+onMounted(async () => {
+  await initialize();
   if (!useUserInfo().value.id) {
-    tryThrowAndShowError(
-      {
-        response: {
-          status: HTTPStatus.NOT_FOUND,
-        },
-      },
-      "页面未找到",
-    );
+    useRedirectAfterLogin().value = route.fullPath;
+    router.push("/login");
+    return;
   }
 });
 definePageMeta({ layout: false });
 </script>
 <template>
-  <a-layout>
+  <a-layout v-if="userInfo.id">
     <a-layout-header class="py-4 px-6 items-center">
       <a-row justify="space-between">
         <a-col flex="none">

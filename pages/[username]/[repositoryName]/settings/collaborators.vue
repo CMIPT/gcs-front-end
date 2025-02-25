@@ -12,6 +12,8 @@ const repositoryCollaboratorList = ref<RepositoryVO[]>();
 const isModalVisible = ref(false);
 const userSearchPattern = ref<string>("");
 const userFound = ref<boolean>();
+const route = useRoute();
+const router = useRouter();
 
 const searchUser = async () => {
   if (userSearchPattern.value === "" || !userSearchPattern.value) {
@@ -148,6 +150,12 @@ const handleAddCollaboratorConfirm = async () => {
     });
 };
 onMounted(async () => {
+  await initialize()
+  if (!useUserInfo().value.id) {
+    useRedirectAfterLogin().value = route.fullPath;
+    router.push("/login");
+    return;
+  }
   fetchRepositoryCollaborators(currentPage.value);
 });
 </script>

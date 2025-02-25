@@ -1,5 +1,6 @@
 <script setup lang="ts">
 const route = useRoute();
+const router = useRouter();
 const repository = ref<RepositoryVO>();
 const userInfo = useUserInfo();
 const selectedMenu = ref<string>(route.path.split("/")[3] || "code");
@@ -27,14 +28,9 @@ const fetchRepositoryDetails = async (
 onMounted(async () => {
   await initialize();
   if (!useUserInfo().value.id) {
-    tryThrowAndShowError(
-      {
-        response: {
-          status: HTTPStatus.NOT_FOUND,
-        },
-      },
-      "页面未找到",
-    );
+    useRedirectAfterLogin().value = route.fullPath;
+    router.push("/login");
+    return;
   }
   const username = route.params.username as string;
   const repositoryName = route.params.repositoryName as string;
@@ -73,7 +69,11 @@ definePageMeta({
           <GCSUser />
         </a-col>
       </a-row>
-      <a-menu mode="horizontal" :default-selected-keys="[selectedMenu]" v-if="repository">
+      <a-menu
+        mode="horizontal"
+        :default-selected-keys="[selectedMenu]"
+        v-if="repository"
+      >
         <NuxtLink
           v-if="repository?.userId === userInfo.id"
           :to="`/${repository?.username}/${repository?.repositoryName}`"
