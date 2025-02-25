@@ -1,7 +1,10 @@
 <script setup lang="ts">
-defineProps({
+const props = defineProps({
   repository: Object as () => RepositoryVO,
 });
+const newRepositoryDescription = ref("");
+const repository = props.repository;
+const isModalVisible = ref(false);
 const tags = ref(["v1.0", "v1.1", "v2.0"]); // Example tags
 const branchSearch = ref("");
 const branches = ref(["master", "develop", "feature-1", "feature-2"]); // Example branches
@@ -22,6 +25,36 @@ const selectTag = (tag: string) => {
 
 const selectBranch = (branch: string) => {
   selectedBranch.value = branch;
+};
+
+const handleUpdateRepositoryDescription = async () => {
+  if (!repository) {
+    throw new Error("Repository not found");
+  }
+  if (newRepositoryDescription.value === repository.repositoryDescription) {
+    return true;
+  }
+  const apiURL = new URL(
+    APIPaths.REPOSITORY_UPDATE_REPOSITORY_API_PATH,
+    window.origin,
+  );
+  return await fetchWithRetry(apiURL.toString(), {
+    method: "POST",
+    body: JSON.stringify({
+      id: repository.id,
+      repositoryDescription: repository.repositoryDescription,
+    }),
+  })
+    .then(() => {
+      Message.success({ content: "修改成功" });
+      repository.repositoryDescription = newRepositoryDescription.value;
+      return true;
+    })
+    .catch((error) => {
+      const message = error.data["message"];
+      Message.error({ id: "update-repository-description", content: message });
+      return false;
+    });
 };
 </script>
 <template>
@@ -159,7 +192,40 @@ const selectBranch = (branch: string) => {
     </a-list>
   </a-layout-content>
   <a-layout-sider v-if="repository">
-    <a-typography-title :heading="5"> 介绍 </a-typography-title>
+    <a-typography-title :heading="5">
+      <a-row justify="space-between">
+        <a-col flex="none"> 介绍 </a-col>
+        <a-col flex="none">
+          <a-button
+            type="text"
+            shape="circle"
+            @click="
+              () => {
+                if (repository) {
+                  newRepositoryDescription = repository.repositoryDescription;
+                }
+                isModalVisible = true;
+              }
+            "
+          >
+            <icon-settings />
+          </a-button>
+        </a-col>
+      </a-row>
+    </a-typography-title>
     {{ repository.repositoryDescription }}
   </a-layout-sider>
+  <a-modal
+    v-if="repository"
+    title="编辑仓库详情"
+    v-model:visible="isModalVisible"
+    :on-before-ok="handleUpdateRepositoryDescription"
+    @cancel="
+      () => {
+        isModalVisible = false;
+      }
+    "
+  >
+    <a-input v-model="newRepositoryDescription" />
+  </a-modal>
 </template>
