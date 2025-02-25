@@ -11,6 +11,7 @@ export type UserVO = {
   id: string;
   username: string;
   email: string;
+  avatarUrl: string;
 };
 export type SshKeyVO = {
   id: string;
@@ -25,6 +26,7 @@ export type RepositoryVO = {
   isPrivate: boolean;
   userId: string;
   username: string;
+  avatarUrl: string;
   star: number;
   fork: number;
   watcher: number;

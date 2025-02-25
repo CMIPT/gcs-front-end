@@ -17,7 +17,7 @@ const userAuth = useUserAuth();
       </a-row>
     </a-layout-header>
 
-    <a-layout-content>
+    <a-layout-content :style="{ width: '90%' }">
       <slot />
     </a-layout-content>
 

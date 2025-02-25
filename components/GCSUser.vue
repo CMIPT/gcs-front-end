@@ -10,13 +10,18 @@ const userInfo = useUserInfo();
       </a-button>
     </NuxtLink>
     <a-dropdown>
-      <a-avatar>
-        {{ userInfo.username.substring(0, 3).toUpperCase() }}
+      <a-avatar :image-url="userInfo.avatarUrl">
         <template #trigger-icon>
           <icon-down />
         </template>
       </a-avatar>
       <template #content>
+        <NuxtLink :to="`/${userInfo.username}`">
+          <a-doption>
+            <template #icon><icon-user /></template>
+            用户主页
+          </a-doption>
+        </NuxtLink>
         <NuxtLink to="/settings">
           <a-doption>
             <template #icon><icon-settings /></template>
