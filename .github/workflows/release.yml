@@ -1,0 +1,65 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - "v*.*.*"
+jobs:
+  build:
+    name: Build as a tar.gz
+    runs-on: ubuntu:latest
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 10
+          run_install: false
+
+      - name: Install Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'pnpm'
+
+      - name: Install project dependencies
+        run: pnpm install
+
+      - name: Build
+        run: pnpm build
+
+      - name: Tar the .output directory
+        run: tar -czf gcs-front-end.tar.gz .output
+
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: gcs-front-end
+          path: gcs-front-end.tar.gz
+
+  release:
+    name: Release to GitHub
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Download artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: gcs-front-end
+
+      - name: Upload release asset
+        uses: softprops/action-gh-release@v2
+        with:
+          name: ${{ github.ref_name }}
+          tag_name: ${{ github.ref_name }}
+          token: ${{ github.token }}
+          files: gc-front-end.tar.gz
+          draft: false
+          prerelease: false
+          generate_release_notes: true
