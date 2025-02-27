@@ -57,7 +57,7 @@ jobs:
           name: ${{ github.ref_name }}
           tag_name: ${{ github.ref_name }}
           token: ${{ github.token }}
-          files: gc-front-end.tar.gz
+          files: gcs-front-end.tar.gz
           draft: false
           prerelease: false
           generate_release_notes: true
