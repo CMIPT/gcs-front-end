@@ -7,7 +7,7 @@ on:
 jobs:
   build:
     name: Build as a tar.gz
-    runs-on: ubuntu:latest
+    runs-on: ubuntu-latest
     permissions:
       contents: read
     steps:
