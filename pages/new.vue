@@ -38,7 +38,7 @@ const nameRules: FieldRule[] = [
       );
       apiURL.searchParams.append("repositoryName", repositoryName);
       apiURL.searchParams.append("userId", userInfo.value.id);
-      await $fetch(apiURL.toString())
+      await fetchWithRetry(apiURL.toString())
         .then(() => {
           formState.name = true;
           cb();
