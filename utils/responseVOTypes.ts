@@ -7,6 +7,13 @@ export type PageVO<T> = {
   total: number;
   records: Array<T>;
 };
+export type RepositoryDetailVO = {
+  repositoryVO: RepositoryVO;
+  branchList: Array<string>;
+  tagList: Array<string>;
+  defaultRef: string;
+  path: RepositoryFileDetailVO;
+};
 export type UserVO = {
   id: string;
   username: string;
@@ -18,6 +25,17 @@ export type SshKeyVO = {
   userId: string;
   name: string;
   publicKey: string;
+};
+export type RepositoryFileVO = {
+  name: string;
+  isDirectory: boolean;
+};
+export type RepositoryFileDetailVO = {
+  isDirectory: boolean;
+  content: string;
+  readmeContent: string;
+  licenseContent: string;
+  directoryList: Array<RepositoryFileVO>;
 };
 export type RepositoryVO = {
   id: string;

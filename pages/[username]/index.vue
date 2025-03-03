@@ -25,7 +25,6 @@ const handleUpdateAvatar = async () => {
   return await fetchWithRetry(apiURL.toString(), {
     method: "POST",
     body: JSON.stringify({
-      id: userInfo.value.id,
       avatarUrl: newAvatarUrl.value,
     }),
   })
@@ -47,7 +46,7 @@ const fetchCurrentUser = async () => {
   }
   const apiURL = new URL(APIPaths.USER_GET_USER_API_PATH, window.origin);
   apiURL.searchParams.append("user", username.value);
-  apiURL.searchParams.append("userType", "username");
+  apiURL.searchParams.append("userType", "USERNAME");
   currentUser.value = await fetchWithRetry<UserVO>(apiURL.toString()).catch(
     (error) => {
       tryThrowAndShowError(error, "用户未找到：" + username.value);
@@ -61,7 +60,8 @@ const fetchRepositories = async (page: number) => {
     APIPaths.REPOSITORY_PAGE_REPOSITORY_API_PATH,
     window.origin,
   );
-  apiURL.searchParams.append("username", username.value);
+  apiURL.searchParams.append("user", username.value);
+  apiURL.searchParams.append("userType", "USERNAME");
   apiURL.searchParams.append("page", page.toString());
   apiURL.searchParams.append("size", defaultPageSize.value.toString());
   await fetchWithRetry<PageVO<RepositoryVO>>(apiURL.toString())

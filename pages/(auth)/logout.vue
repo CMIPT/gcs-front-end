@@ -7,8 +7,7 @@ onMounted(async () => {
       APIPaths.AUTHENTICATION_SIGN_OUT_API_PATH,
       window.origin,
     );
-    apiURL.searchParams.append("id", userInfo.value.id);
-    await $fetch(apiURL.toString(), {
+    await fetchWithRetry(apiURL.toString(), {
       method: "DELETE",
     })
       .then(() => {

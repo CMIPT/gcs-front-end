@@ -75,7 +75,7 @@ async function initializeUserInfo() {
     return;
   }
   const apiURL = new URL(APIPaths.USER_GET_USER_API_PATH, window.origin);
-  apiURL.searchParams.append("userType", "token");
+  apiURL.searchParams.append("userType", "TOKEN");
   useUserInfo().value = await fetchWithRetry<UserVO>(apiURL.toString()).catch(
     () => {
       useUserAuth().value = {} as UserAuthState;

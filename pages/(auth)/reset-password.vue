@@ -101,12 +101,14 @@ const handleResetPassword = async () => {
     APIPaths.USER_UPDATE_USER_PASSWORD_WITH_EMAIL_VERIFICATION_CODE_API_PATH,
     window.origin,
   );
-  apiURL.searchParams.append("email", form.email);
-  apiURL.searchParams.append("newPassword", form.password);
-  apiURL.searchParams.append("emailVerificationCode", form.verificationCode);
   await $fetch
     .raw(apiURL.toString(), {
       method: "POST",
+      body: JSON.stringify({
+        email: form.email,
+        newPassword: form.password,
+        emailVerificationCode: form.verificationCode,
+      }),
     })
     .then(async () => {
       Message.success("密码重置成功，登录中……");

@@ -2,13 +2,13 @@
 import { type PaginationProps } from "@arco-design/web-vue";
 
 const props = defineProps({
-  repository: Object as () => RepositoryVO,
+  repository: Object as () => RepositoryDetailVO,
 });
 const repository = props.repository;
 const defaultPageSize = ref(10);
 const total = ref(0);
 const currentPage = ref(1);
-const repositoryCollaboratorList = ref<RepositoryVO[]>();
+const repositoryCollaboratorList = ref<UserVO[]>();
 const isModalVisible = ref(false);
 const userSearchPattern = ref<string>("");
 const userFound = ref<boolean>();
@@ -21,11 +21,11 @@ const searchUser = async () => {
     return;
   }
   const apiURL = new URL(APIPaths.USER_GET_USER_API_PATH, window.origin);
-  apiURL.searchParams.append("userType", "username");
+  apiURL.searchParams.append("userType", "USERNAME");
   apiURL.searchParams.append("user", userSearchPattern.value);
   await fetchWithRetry<UserVO>(apiURL.toString())
     .then((resp) => {
-      if (resp.id == repository?.userId) {
+      if (resp.id == repository?.repositoryVO.userId) {
         Message.error("不能添加自己为合作者");
         userFound.value = false;
         return;
@@ -63,10 +63,10 @@ const fetchRepositoryCollaborators = async (page: number) => {
     APIPaths.REPOSITORY_PAGE_COLLABORATOR_API_PATH,
     window.origin,
   );
-  apiURL.searchParams.append("repositoryId", repository.id);
+  apiURL.searchParams.append("repositoryId", repository.repositoryVO.id);
   apiURL.searchParams.append("page", page.toString());
   apiURL.searchParams.append("size", defaultPageSize.value.toString());
-  await fetchWithRetry<PageVO<RepositoryVO>>(apiURL.toString())
+  await fetchWithRetry<PageVO<UserVO>>(apiURL.toString())
     .then((response) => {
       repositoryCollaboratorList.value = response.records;
       total.value = response.total;
@@ -98,7 +98,8 @@ const deleteCollaborator = (index: number) => {
         APIPaths.REPOSITORY_REMOVE_COLLABORATION_API_PATH,
         window.origin,
       );
-      apiURL.searchParams.append("repositoryId", repository.id);
+      // TODO: delete directly with id
+      apiURL.searchParams.append("repositoryId", repository.repositoryVO.id);
       apiURL.searchParams.append("collaboratorId", collaborator.id);
       await fetchWithRetry(apiURL.toString(), {
         method: "DELETE",
@@ -132,9 +133,9 @@ const handleAddCollaboratorConfirm = async () => {
     APIPaths.REPOSITORY_ADD_COLLABORATOR_API_PATH,
     window.origin,
   );
-  apiURL.searchParams.append("repositoryId", repository.id);
+  apiURL.searchParams.append("repositoryId", repository.repositoryVO.id);
   apiURL.searchParams.append("collaborator", userSearchPattern.value);
-  apiURL.searchParams.append("collaboratorType", "username");
+  apiURL.searchParams.append("collaboratorType", "USERNAME");
   return await fetchWithRetry(apiURL.toString(), {
     method: "POST",
   })
@@ -178,6 +179,7 @@ onMounted(async () => {
     >
       <template #item="{ item, index }">
         <a-list-item action-layout="vertical">
+          <!-- TODO: add user avatarUrl -->
           <a-list-item-meta :title="item.username" :description="item.email" />
           <template #actions>
             <icon-delete @click="deleteCollaborator(index)" />
@@ -187,7 +189,7 @@ onMounted(async () => {
     </a-list>
   </div>
   <a-modal
-    :title="`向${repository.repositoryName}添加合作者`"
+    :title="`向${repository.repositoryVO.repositoryName}添加合作者`"
     v-model:visible="isModalVisible"
     :on-before-ok="handleAddCollaboratorConfirm"
     :ok-button-props="{ disabled: !userFound }"
