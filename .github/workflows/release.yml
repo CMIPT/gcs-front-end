@@ -30,14 +30,21 @@ jobs:
       - name: Build
         run: pnpm build
 
-      - name: Tar the .output directory
-        run: tar -czf gcs-front-end.tar.gz .output
+      - name: Get latest package from gcs-back-end
+        run: curl -L https://github.com/CMIPT/gcs-back-end/releases/latest/download/gcs-back-end.tar.gz -o gcs-back-end.tar.gz
+
+      - name: Append .output to gcs-back-end
+        run: |
+          gunzip gcs-back-end.tar.gz
+          tar --append -f gcs-back-end.tar .output
+          gzip gcs-back-end.tar
+          mv gcs-back-end.tar.gz gcs.tar.gz
 
       - name: Upload artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: gcs-front-end
-          path: gcs-front-end.tar.gz
+          name: gcs
+          path: gcs.tar.gz
 
   release:
     name: Release to GitHub
@@ -49,7 +56,7 @@ jobs:
       - name: Download artifacts
         uses: actions/download-artifact@v4
         with:
-          name: gcs-front-end
+          name: gcs
 
       - name: Upload release asset
         uses: softprops/action-gh-release@v2
@@ -57,7 +64,7 @@ jobs:
           name: ${{ github.ref_name }}
           tag_name: ${{ github.ref_name }}
           token: ${{ github.token }}
-          files: gcs-front-end.tar.gz
+          files: gcs.tar.gz
           draft: false
           prerelease: false
           generate_release_notes: true
