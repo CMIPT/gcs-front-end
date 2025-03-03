@@ -89,7 +89,6 @@ const isFormValid = computed(() => {
 
 const fetchSshKeys = async (page: number) => {
   const apiURL = new URL(APIPaths.SSH_KEY_PAGE_SSH_KEY_API_PATH, window.origin);
-  apiURL.searchParams.append("id", userInfo.value.id);
   apiURL.searchParams.append("page", page.toString());
   apiURL.searchParams.append("size", defaultPageSize.value.toString());
   try {
@@ -183,8 +182,8 @@ const handleAddOrEditSSHKeyConfirm = async () => {
       method: "POST",
       body: {
         id: sshKey.id,
-        name: form.value.name,
-        publicKey: form.value.publicKey,
+        name: form.value.name === sshKey.name ? null : form.value.name,
+        publicKey: form.value.publicKey === sshKey.publicKey ? null : form.value.publicKey,
       },
     })
       .then(() => {

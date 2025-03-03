@@ -1,7 +1,9 @@
 <script setup lang="ts">
+import type { RepositoryDetailVO } from "~/utils/responseVOTypes";
+
 const route = useRoute();
 const router = useRouter();
-const repository = ref<RepositoryVO>();
+const repository = ref<RepositoryDetailVO>();
 const userInfo = useUserInfo();
 const selectedMenu = ref<string>(route.path.split("/")[3] || "code");
 
@@ -15,13 +17,13 @@ const fetchRepositoryDetails = async (
   );
   apiURL.searchParams.append("username", username);
   apiURL.searchParams.append("repositoryName", repositoryName);
-  repository.value = await fetchWithRetry<RepositoryVO>(
+  repository.value = await fetchWithRetry<RepositoryDetailVO>(
     apiURL.toString(),
   ).catch((error) => {
     tryThrowAndShowError(error, "没有找到仓库：" + repositoryName);
     const message = error.data?.message;
     Message.error({ id: "fetch-repository", content: message });
-    return {} as RepositoryVO;
+    return {} as RepositoryDetailVO;
   });
 };
 
@@ -50,16 +52,16 @@ definePageMeta({
           <a-space>
             <GCSBand />
             <a-breadcrumb v-if="repository">
-              <NuxtLink :to="`/${repository.username}`">
+              <NuxtLink :to="`/${repository.repositoryVO.username}`">
                 <a-breadcrumb-item>
-                  {{ repository.username }}
+                  {{ repository.repositoryVO.username }}
                 </a-breadcrumb-item>
               </NuxtLink>
               <NuxtLink
-                :to="`/${repository.username}/${repository.repositoryName}`"
+                :to="`/${repository.repositoryVO.username}/${repository.repositoryVO.repositoryName}`"
               >
                 <a-breadcrumb-item>
-                  {{ repository.repositoryName }}
+                  {{ repository.repositoryVO.repositoryName }}
                 </a-breadcrumb-item>
               </NuxtLink>
             </a-breadcrumb>
@@ -75,8 +77,8 @@ definePageMeta({
         v-if="repository"
       >
         <NuxtLink
-          v-if="repository?.userId === userInfo.id"
-          :to="`/${repository?.username}/${repository?.repositoryName}`"
+          v-if="repository?.repositoryVO.userId === userInfo.id"
+          :to="`/${repository?.repositoryVO.username}/${repository?.repositoryVO.repositoryName}`"
         >
           <a-menu-item key="code">
             <template #icon><icon-code /></template>
@@ -94,8 +96,8 @@ definePageMeta({
           Pull Requests
         </a-menu-item>
         <NuxtLink
-          v-if="repository?.userId === userInfo.id"
-          :to="`/${repository?.username}/${repository?.repositoryName}/settings`"
+          v-if="repository?.repositoryVO.userId === userInfo.id"
+          :to="`/${repository?.repositoryVO.username}/${repository?.repositoryVO.repositoryName}/settings`"
         >
           <a-menu-item key="settings">
             <template #icon><icon-settings /></template>

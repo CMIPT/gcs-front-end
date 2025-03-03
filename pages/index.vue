@@ -17,7 +17,8 @@ const fetchRepositories = async (page: number) => {
     APIPaths.REPOSITORY_PAGE_REPOSITORY_API_PATH,
     window.origin,
   );
-  apiURL.searchParams.append("id", userInfo.value.id);
+  apiURL.searchParams.append("user", userInfo.value.id);
+  apiURL.searchParams.append("userType", "ID");
   apiURL.searchParams.append("page", page.toString());
   apiURL.searchParams.append("size", defaultPageSize.value.toString());
   const response = await fetchWithRetry<PageVO<RepositoryVO>>(

@@ -1,6 +1,6 @@
 <script setup lang="ts">
 const props = defineProps({
-  repository: Object as () => RepositoryVO,
+  repository: Object as () => RepositoryDetailVO,
 });
 const userInfo = useUserInfo();
 const newRepositoryDescription = ref("");
@@ -32,7 +32,7 @@ const handleUpdateRepositoryDescription = async () => {
   if (!repository) {
     throw new Error("Repository not found");
   }
-  if (newRepositoryDescription.value === repository.repositoryDescription) {
+  if (newRepositoryDescription.value === repository.repositoryVO.repositoryDescription) {
     return true;
   }
   const apiURL = new URL(
@@ -42,13 +42,13 @@ const handleUpdateRepositoryDescription = async () => {
   return await fetchWithRetry(apiURL.toString(), {
     method: "POST",
     body: JSON.stringify({
-      id: repository.id,
-      repositoryDescription: repository.repositoryDescription,
+      id: repository.repositoryVO.id,
+      repositoryDescription: repository.repositoryVO.repositoryDescription,
     }),
   })
     .then(() => {
       Message.success({ content: "修改成功" });
-      repository.repositoryDescription = newRepositoryDescription.value;
+      repository.repositoryVO.repositoryDescription = newRepositoryDescription.value;
       return true;
     })
     .catch((error) => {
@@ -63,16 +63,16 @@ const handleUpdateRepositoryDescription = async () => {
     <a-row justify="space-between">
       <a-col flex="none">
         <a-space>
-          <a-avatar :size="30" :image-url="repository.avatarUrl"/>
+          <a-avatar :size="30" :image-url="repository.repositoryVO.avatarUrl"/>
           <a-typography-text :bold="true">
-            {{ repository.repositoryName }}
+            {{ repository.repositoryVO.repositoryName }}
           </a-typography-text>
           <a-tag
-            :color="repository.isPrivate ? 'gray' : 'green'"
+            :color="repository.repositoryVO.isPrivate ? 'gray' : 'green'"
             bordered
             shape="round"
           >
-            {{ repository.isPrivate ? "Private" : "Public" }}
+            {{ repository.repositoryVO.isPrivate ? "Private" : "Public" }}
           </a-tag>
         </a-space>
       </a-col>
@@ -81,20 +81,20 @@ const handleUpdateRepositoryDescription = async () => {
           <a-tooltip content="Stars">
             <a-button shape="round">
               <icon-star />
-              {{ repository.star }}
+              {{ repository.repositoryVO.star }}
             </a-button>
           </a-tooltip>
           <a-tooltip content="Forks">
             <a-button shape="round">
               <!-- TODO: icon not found -->
               <!-- <icon-fork /> -->
-              {{ repository.fork }}
+              {{ repository.repositoryVO.fork }}
             </a-button>
           </a-tooltip>
           <a-tooltip content="Watchers">
             <a-button shape="round">
               <icon-eye />
-              {{ repository.watcher }}
+              {{ repository.repositoryVO.watcher }}
             </a-button>
           </a-tooltip>
         </a-space>
@@ -157,12 +157,12 @@ const handleUpdateRepositoryDescription = async () => {
             <a-tabs :default-active-key="'ssh'">
               <a-tab-pane key="https" title="HTTPS">
                 <a-typography-text copyable>
-                  {{ repository.httpsUrl }}
+                  {{ repository.repositoryVO.httpsUrl }}
                 </a-typography-text>
               </a-tab-pane>
               <a-tab-pane key="ssh" title="SSH">
                 <a-typography-text copyable>
-                  {{ repository.sshUrl }}
+                  {{ repository.repositoryVO.sshUrl }}
                 </a-typography-text>
               </a-tab-pane>
             </a-tabs>
@@ -196,13 +196,13 @@ const handleUpdateRepositoryDescription = async () => {
         <a-col flex="none"> 介绍 </a-col>
         <a-col flex="none">
           <a-button
-            v-if="repository.userId === userInfo.id"
+            v-if="repository.repositoryVO.userId === userInfo.id"
             type="text"
             shape="circle"
             @click="
               () => {
                 if (repository) {
-                  newRepositoryDescription = repository.repositoryDescription;
+                  newRepositoryDescription = repository.repositoryVO.repositoryDescription;
                 }
                 isModalVisible = true;
               }
@@ -213,7 +213,7 @@ const handleUpdateRepositoryDescription = async () => {
         </a-col>
       </a-row>
     </a-typography-title>
-    {{ repository.repositoryDescription }}
+    {{ repository.repositoryVO.repositoryDescription }}
   </a-layout-sider>
   <a-modal
     v-if="repository"

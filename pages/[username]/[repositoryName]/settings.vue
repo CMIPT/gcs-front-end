@@ -3,17 +3,17 @@ const route = useRoute();
 const router = useRouter();
 const selectedMenu = ref<string>(route.path.split("/")[4] || "settings");
 const props = defineProps(["repository"]);
-const repository = props.repository as RepositoryVO;
+const repository = props.repository as RepositoryDetailVO;
 const userInfo = useUserInfo();
 const pageFound = ref<boolean>();
 onMounted(async () => {
-  await initialize()
+  await initialize();
   if (!useUserInfo().value.id) {
     useRedirectAfterLogin().value = route.fullPath;
     router.push("/login");
-    return
+    return;
   }
-  if (repository.userId !== userInfo.value.id) {
+  if (repository.repositoryVO.userId !== userInfo.value.id) {
     tryThrowAndShowError(
       {
         response: {
@@ -29,13 +29,17 @@ onMounted(async () => {
 <template>
   <a-layout-sider :width="350" v-if="pageFound">
     <a-menu :default-selected-keys="[selectedMenu]">
-      <NuxtLink :to="`/${repository?.username}/${repository?.repositoryName}/settings`">
+      <NuxtLink
+        :to="`/${repository?.repositoryVO.username}/${repository?.repositoryVO.repositoryName}/settings`"
+      >
         <a-menu-item key="settings">
           <template #icon><icon-settings /></template>
           设置
         </a-menu-item>
       </NuxtLink>
-      <NuxtLink :to="`/${repository?.username}/${repository?.repositoryName}/settings/collaborators`">
+      <NuxtLink
+        :to="`/${repository?.repositoryVO.username}/${repository?.repositoryVO.repositoryName}/settings/collaborators`"
+      >
         <a-menu-item key="collaborators">
           <template #icon><icon-user-group /></template>
           合作者
@@ -44,6 +48,6 @@ onMounted(async () => {
     </a-menu>
   </a-layout-sider>
   <a-layout-content>
-    <NuxtPage :repository="repository"/>
+    <NuxtPage :repository="repository" />
   </a-layout-content>
 </template>
