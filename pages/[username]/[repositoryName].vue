@@ -6,11 +6,10 @@ const router = useRouter();
 const repository = ref<RepositoryDetailVO>();
 const userInfo = useUserInfo();
 const selectedMenu = ref<string>(route.path.split("/")[3] || "code");
+const username = route.params.username as string;
+const repositoryName = route.params.repositoryName as string;
 
-const fetchRepositoryDetails = async (
-  username: string,
-  repositoryName: string,
-) => {
+const fetchRepositoryDetails = async () => {
   const apiURL = new URL(
     APIPaths.REPOSITORY_GET_REPOSITORY_API_PATH,
     window.origin,
@@ -34,9 +33,7 @@ onMounted(async () => {
     router.push("/login");
     return;
   }
-  const username = route.params.username as string;
-  const repositoryName = route.params.repositoryName as string;
-  await fetchRepositoryDetails(username, repositoryName);
+  await fetchRepositoryDetails();
 });
 
 definePageMeta({
@@ -51,17 +48,15 @@ definePageMeta({
         <a-col flex="none">
           <a-space>
             <GCSBand />
-            <a-breadcrumb v-if="repository">
+            <a-breadcrumb>
               <a-breadcrumb-item>
-                <NuxtLink :to="`/${repository.repositoryVO.username}`">
-                  {{ repository.repositoryVO.username }}
+                <NuxtLink :to="'/' + username">
+                  {{ username }}
                 </NuxtLink>
               </a-breadcrumb-item>
               <a-breadcrumb-item>
-                <NuxtLink
-                  :to="`/${repository.repositoryVO.username}/${repository.repositoryVO.repositoryName}`"
-                >
-                  {{ repository.repositoryVO.repositoryName }}
+                <NuxtLink :to="`/${username}/${repositoryName}`">
+                  {{ repositoryName }}
                 </NuxtLink>
               </a-breadcrumb-item>
             </a-breadcrumb>
@@ -79,9 +74,9 @@ definePageMeta({
         <NuxtLink
           :to="
             '/' +
-            route.params.username +
+            username +
             '/' +
-            route.params.repositoryName +
+            repositoryName +
             (route.params.gitRef ? '/tree/' + route.params.gitRef : '')
           "
         >
@@ -102,7 +97,7 @@ definePageMeta({
         </a-menu-item>
         <NuxtLink
           v-if="repository?.repositoryVO.userId === userInfo.id"
-          :to="`/${repository?.repositoryVO.username}/${repository?.repositoryVO.repositoryName}/settings`"
+          :to="`/${username}/${repositoryName}/settings`"
         >
           <a-menu-item key="settings">
             <template #icon><icon-settings /></template>

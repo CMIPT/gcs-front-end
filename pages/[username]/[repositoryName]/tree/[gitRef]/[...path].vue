@@ -3,11 +3,7 @@ const route = useRoute();
 const username = route.params.username as string;
 const repositoryName = route.params.repositoryName as string;
 const gitRef = route.params.gitRef as string;
-const path = (
-  typeof route.params.path === "string"
-    ? [route.params.path]
-    : route.params.path
-).join("/");
+const path = (route.params.path as string[]).join("/");
 const pathDetail = ref<RepositoryFileDetailVO>();
 
 const fetchPathInfo = async () => {

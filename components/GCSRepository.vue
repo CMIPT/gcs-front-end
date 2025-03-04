@@ -1,14 +1,17 @@
 <script setup lang="ts">
-const props = defineProps({
-  repository: Object as () => RepositoryDetailVO,
-});
+const route = useRoute();
 const router = useRouter();
-const repository = props.repository;
+const repository = ref<RepositoryDetailVO>();
 const newRepositoryDescription = ref("");
 const userInfo = useUserInfo();
 const isModalVisible = ref(false);
 const refSearch = ref("");
-const selectedRef = ref(repository?.defaultRef);
+const username = route.params.username as string;
+const repositoryName = route.params.repositoryName as string;
+const gitRef = route.params.gitRef as string;
+const selectedRef = ref(
+  gitRef ? "refs/heads/" + gitRef : undefined,
+);
 const showTags = ref(false);
 const filteredBranches = computed(() => {
   if (!sortedBranchList.value) {
@@ -27,42 +30,30 @@ const filteredTagList = computed(() => {
   );
 });
 const sortedBranchList = computed(() => {
-  return repository?.branchList.sort((a, b) => {
-    if (a === repository.defaultRef) {
+  return repository.value?.branchList.sort((a, b) => {
+    if (a === repository.value?.defaultRef) {
       return -1;
     }
-    if (b === repository.defaultRef) {
+    if (b === repository.value?.defaultRef) {
       return 1;
     }
     return a.localeCompare(b);
   });
 });
 const sortedTagList = computed(() => {
-  return repository?.tagList.sort((a, b) => {
+  return repository.value?.tagList.sort((a, b) => {
     return a.localeCompare(b);
   });
 });
 const selectTag = (tag: string) => {
   selectedRef.value = tag;
-  router.push(
-    "/" +
-      repository?.repositoryVO.username +
-      "/" +
-      repository?.repositoryVO.repositoryName +
-      "/tree/" +
-      tag.slice(10),
-  );
+  router.push("/" + username + "/" + repositoryName + "/tree/" + tag.slice(10));
 };
 
 const selectBranch = (branch: string) => {
   selectedRef.value = branch;
   router.push(
-    "/" +
-      repository?.repositoryVO.username +
-      "/" +
-      repository?.repositoryVO.repositoryName +
-      "/tree/" +
-      branch.slice(11),
+    "/" + username + "/" + repositoryName + "/tree/" + branch.slice(11),
   );
 };
 
@@ -76,7 +67,7 @@ const handleUpdateRepositoryDescription = async () => {
   }
   if (
     newRepositoryDescription.value ===
-    repository.repositoryVO.repositoryDescription
+    repository.value?.repositoryVO.repositoryDescription
   ) {
     return true;
   }
@@ -87,14 +78,17 @@ const handleUpdateRepositoryDescription = async () => {
   return await fetchWithRetry(apiURL.toString(), {
     method: "POST",
     body: JSON.stringify({
-      id: repository.repositoryVO.id,
-      repositoryDescription: repository.repositoryVO.repositoryDescription,
+      id: repository.value?.repositoryVO.id,
+      repositoryDescription:
+        repository.value?.repositoryVO.repositoryDescription,
     }),
   })
     .then(() => {
       Message.success({ content: "修改成功" });
-      repository.repositoryVO.repositoryDescription =
-        newRepositoryDescription.value;
+      if (repository.value) {
+        repository.value.repositoryVO.repositoryDescription =
+          newRepositoryDescription.value;
+      }
       return true;
     })
     .catch((error) => {
@@ -103,6 +97,35 @@ const handleUpdateRepositoryDescription = async () => {
       return false;
     });
 };
+const fetchRepositoryDetails = async () => {
+  const apiURL = new URL(
+    APIPaths.REPOSITORY_GET_REPOSITORY_API_PATH,
+    window.origin,
+  );
+  apiURL.searchParams.append("username", username);
+  apiURL.searchParams.append("repositoryName", repositoryName);
+  apiURL.searchParams.append("ref", selectedRef.value || "");
+  repository.value = await fetchWithRetry<RepositoryDetailVO>(
+    apiURL.toString(),
+  ).catch((error) => {
+    tryThrowAndShowError(error, "没有找到仓库：" + repositoryName);
+    const message = error.data?.message;
+    Message.error({ id: "fetch-repository", content: message });
+    return {} as RepositoryDetailVO;
+  });
+  if (!selectedRef.value) {
+    selectedRef.value = repository.value.defaultRef;
+  }
+};
+onMounted(async () => {
+  await initialize();
+  if (!useUserInfo().value.id) {
+    useRedirectAfterLogin().value = route.fullPath;
+    router.push("/login");
+    return;
+  }
+  await fetchRepositoryDetails();
+});
 </script>
 <template>
   <a-layout-content v-if="repository" class="mx-2">
@@ -111,7 +134,7 @@ const handleUpdateRepositoryDescription = async () => {
         <a-space>
           <a-avatar :size="30" :image-url="repository.repositoryVO.avatarUrl" />
           <a-typography-text :bold="true">
-            {{ repository.repositoryVO.repositoryName }}
+            {{ repositoryName }}
           </a-typography-text>
           <a-tag
             :color="repository.repositoryVO.isPrivate ? 'gray' : 'green'"
@@ -260,9 +283,9 @@ const handleUpdateRepositoryDescription = async () => {
     <GCSRepositoryDirectory
       :prefix="
         '/' +
-        repository.repositoryVO.username +
+        username +
         '/' +
-        repository.repositoryVO.repositoryName +
+        repositoryName +
         '/tree/' +
         (selectedRef?.startsWith('refs/tags/')
           ? selectedRef.slice(10)
