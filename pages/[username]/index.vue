@@ -81,7 +81,7 @@ onMounted(async () => {
     router.push("/login");
     return;
   }
-  fetchCurrentUser();
+  await fetchCurrentUser();
   fetchRepositories(currentPage.value);
 });
 
