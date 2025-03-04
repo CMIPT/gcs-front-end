@@ -1,15 +1,50 @@
 // https://nuxt.com/docs/api/configuration/nuxt-config
 export default defineNuxtConfig({
-  compatibilityDate: '2024-04-03',
+  compatibilityDate: "2024-04-03",
   devtools: { enabled: true },
   modules: [
-    '@nuxtjs/tailwindcss',
-    '@nuxt/icon',
-    'arco-design-nuxt-module'
+    "@nuxtjs/tailwindcss",
+    "@nuxt/icon",
+    "arco-design-nuxt-module",
+    "@nuxtjs/mdc",
   ],
   routeRules: {
-    "/api/**": {
-      proxy: "http://localhost:8080/api/**"
-    }
-  }
-})
+    "/api/gcs/**": {
+      proxy: "http://localhost:8080/api/**",
+    },
+  },
+  mdc: {
+    highlight: {
+      langs: [
+        "awk",
+        "bash",
+        "bat",
+        "c",
+        "c#",
+        "c++",
+        "cpp",
+        "csharp",
+        "css",
+        "diff",
+        "fish",
+        "go",
+        "html",
+        "java",
+        "javascript",
+        "json",
+        "lua",
+        "php",
+        "python",
+        "ruby",
+        "rust",
+        "shell",
+        "sql",
+        "toml",
+        "ts",
+        "xml",
+        "yaml",
+        "yml",
+      ],
+    },
+  },
+});

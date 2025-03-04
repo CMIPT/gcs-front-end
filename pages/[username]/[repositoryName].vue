@@ -36,7 +36,7 @@ onMounted(async () => {
   }
   const username = route.params.username as string;
   const repositoryName = route.params.repositoryName as string;
-  fetchRepositoryDetails(username, repositoryName);
+  await fetchRepositoryDetails(username, repositoryName);
 });
 
 definePageMeta({
@@ -52,18 +52,18 @@ definePageMeta({
           <a-space>
             <GCSBand />
             <a-breadcrumb v-if="repository">
-              <NuxtLink :to="`/${repository.repositoryVO.username}`">
-                <a-breadcrumb-item>
+              <a-breadcrumb-item>
+                <NuxtLink :to="`/${repository.repositoryVO.username}`">
                   {{ repository.repositoryVO.username }}
-                </a-breadcrumb-item>
-              </NuxtLink>
-              <NuxtLink
-                :to="`/${repository.repositoryVO.username}/${repository.repositoryVO.repositoryName}`"
-              >
-                <a-breadcrumb-item>
+                </NuxtLink>
+              </a-breadcrumb-item>
+              <a-breadcrumb-item>
+                <NuxtLink
+                  :to="`/${repository.repositoryVO.username}/${repository.repositoryVO.repositoryName}`"
+                >
                   {{ repository.repositoryVO.repositoryName }}
-                </a-breadcrumb-item>
-              </NuxtLink>
+                </NuxtLink>
+              </a-breadcrumb-item>
             </a-breadcrumb>
           </a-space>
         </a-col>
@@ -77,23 +77,28 @@ definePageMeta({
         v-if="repository"
       >
         <NuxtLink
-          v-if="repository?.repositoryVO.userId === userInfo.id"
-          :to="`/${repository?.repositoryVO.username}/${repository?.repositoryVO.repositoryName}`"
+          :to="
+            '/' +
+            route.params.username +
+            '/' +
+            route.params.repositoryName +
+            (route.params.gitRef ? '/tree/' + route.params.gitRef : '')
+          "
         >
           <a-menu-item key="code">
             <template #icon><icon-code /></template>
-            Code
+            代码
           </a-menu-item>
         </NuxtLink>
         <a-menu-item key="issues">
           <!-- TODO: icon not found -->
           <!-- <template #icon><icon-issue /></template> -->
-          Issues
+          问题
         </a-menu-item>
         <a-menu-item key="pr">
           <!-- TODO: icon not found -->
           <!-- <template #icon><icon-pull-request /></template> -->
-          Pull Requests
+          合并请求
         </a-menu-item>
         <NuxtLink
           v-if="repository?.repositoryVO.userId === userInfo.id"
@@ -101,7 +106,7 @@ definePageMeta({
         >
           <a-menu-item key="settings">
             <template #icon><icon-settings /></template>
-            Settings
+            设置
           </a-menu-item>
         </NuxtLink>
       </a-menu>
