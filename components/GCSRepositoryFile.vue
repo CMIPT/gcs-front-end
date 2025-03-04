@@ -50,7 +50,6 @@ const getContent = () => {
   } else {
     result = props.content || "";
   }
-  console.log(result);
   return result;
 };
 // TODO: line number, diff, etc.

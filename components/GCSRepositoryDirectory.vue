@@ -3,7 +3,7 @@ const props = defineProps({
   prefix: String,
   directoryList: Array as () => RepositoryFileVO[],
 });
-props.directoryList?.sort((a, b) => {
+const directoryList = props.directoryList?.sort((a, b) => {
   if (a.isDirectory && !b.isDirectory) {
     return -1;
   }
@@ -11,6 +11,9 @@ props.directoryList?.sort((a, b) => {
     return 1;
   }
   return a.name.localeCompare(b.name);
+});
+onMounted(() => {
+  console.log(directoryList);
 });
 </script>
 <template>

@@ -1,14 +1,10 @@
 <script setup lang="ts">
 import type { TreeNodeData } from "@arco-design/web-vue";
 
-const props = defineProps({
-  repository: Object as () => RepositoryDetailVO,
-});
 const route = useRoute();
 const router = useRouter();
 const searchKey = ref("");
 const repository = ref<RepositoryDetailVO>();
-repository.value = props.repository;
 const insideNestedPath = computed(() => {
   return route.params.path !== undefined;
 });
@@ -53,6 +49,9 @@ const loadMore = async (treeNode: TreeNodeData) => {
   apiURL.searchParams.append("ref", gitRef);
   apiURL.searchParams.append("path", key);
   const response = await fetchWithRetry<RepositoryDetailVO>(apiURL.toString());
+  if (!repository.value) {
+    repository.value = response
+  }
   treeNode.children = [];
   for (const fileOrDir of response.path.directoryList) {
     treeNode.children.push({
@@ -79,11 +78,11 @@ const onSelect = (_: Array<string | number>, data: any) => {
   collapsed.value = false;
   router.push(
     "/" +
-      route.params.username +
+      username +
       "/" +
-      route.params.repositoryName +
+      repositoryName +
       "/tree/" +
-      route.params.gitRef +
+      gitRef +
       "/" +
       data.node.key,
   );
@@ -177,15 +176,13 @@ const fetchAllTreeData = async () => {
       </a-button>
       <a-breadcrumb>
         <a-breadcrumb-item>
-          <NuxtLink
-            :to="`/${username}/${repositoryName}/tree/${route.params.gitRef}`"
-          >
+          <NuxtLink :to="`/${username}/${repositoryName}/tree/${gitRef}`">
             {{ repositoryName }}
           </NuxtLink>
         </a-breadcrumb-item>
-        <a-breadcrumb-item v-for="(item, index) in route.params.path">
+        <a-breadcrumb-item v-for="(item, index) in (route.params.path as string[])">
           <NuxtLink
-            :to="`/${username}/${repositoryName}/tree/${route.params.gitRef}/${route.params.path
+            :to="`/${username}/${repositoryName}/tree/${gitRef}/${(route.params.path as string[])
               .slice(0, index + 1)
               .join('/')}`"
             >{{ item }}</NuxtLink
