@@ -42,18 +42,23 @@ const getLanguage = () => {
   }
   return "";
 };
+const result = ref<string>("");
 const getContent = () => {
   const language = props.language || getLanguage();
-  let result: string;
-  if (language !== "markdown" && language !== "md" && language !== "") {
-    result = "```" + language + "\n" + props.content + "\n```";
+  if (language !== "markdown" && language !== "") {
+    result.value = "```" + language + "\n" + props.content + "\n```";
+  } else if (language === "markdown") {
+    result.value = props.content || "";
   } else {
-    result = props.content || "";
+    result.value = (props.content || "").replace(/\n/g, "<br>");
   }
-  return result;
+  return result.value;
 };
 // TODO: line number, diff, etc.
 </script>
 <template>
-  <MDC :value="getContent()" />
+  <a-typography v-if="getLanguage() === '' || getLanguage() == 'markdown'">
+    <pre v-html="getContent()" />
+  </a-typography>
+  <MDC :value="getContent()" v-else />
 </template>
