@@ -62,12 +62,12 @@ const handleTabChange = (key: string | number) => {
 };
 
 const handleUpdateRepositoryDescription = async () => {
-  if (!repository) {
+  if (!repository.value) {
     throw new Error("Repository not found");
   }
   if (
     newRepositoryDescription.value ===
-    repository.value?.repositoryVO.repositoryDescription
+    repository.value.repositoryVO.repositoryDescription
   ) {
     return true;
   }
@@ -79,8 +79,7 @@ const handleUpdateRepositoryDescription = async () => {
     method: "POST",
     body: JSON.stringify({
       id: repository.value?.repositoryVO.id,
-      repositoryDescription:
-        repository.value?.repositoryVO.repositoryDescription,
+      repositoryDescription: newRepositoryDescription,
     }),
   })
     .then(() => {
