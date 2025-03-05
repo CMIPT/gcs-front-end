@@ -79,7 +79,7 @@ const handleUpdateRepositoryDescription = async () => {
     method: "POST",
     body: JSON.stringify({
       id: repository.value?.repositoryVO.id,
-      repositoryDescription: newRepositoryDescription,
+      repositoryDescription: newRepositoryDescription.value,
     }),
   })
     .then(() => {
