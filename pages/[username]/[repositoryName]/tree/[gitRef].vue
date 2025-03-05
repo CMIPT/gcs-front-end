@@ -12,7 +12,6 @@ const username = route.params.username as string;
 const repositoryName = route.params.repositoryName as string;
 const gitRef = route.params.gitRef as string;
 const collapsed = ref(false);
-const popupVisible = ref(false);
 const treeData = ref<TreeNodeData>({
   key: "",
   title: "",
@@ -50,7 +49,7 @@ const loadMore = async (treeNode: TreeNodeData) => {
   apiURL.searchParams.append("path", key);
   const response = await fetchWithRetry<RepositoryDetailVO>(apiURL.toString());
   if (!repository.value) {
-    repository.value = response
+    repository.value = response;
   }
   treeNode.children = [];
   for (const fileOrDir of response.path.directoryList) {
@@ -88,9 +87,6 @@ const onSelect = (_: Array<string | number>, data: any) => {
   );
 };
 const filteredFiles = computed(() => {
-  if (!searchKey.value) {
-    return [];
-  }
   return allFiles.value.filter((item) =>
     item.toLowerCase().includes(searchKey.value.toLowerCase()),
   );
@@ -123,17 +119,12 @@ const fetchAllTreeData = async () => {
         <IconCaretLeft />
       </a-button>
     </a-layout-header>
-    <a-dropdown
-      position="bl"
-      :popup-visible="popupVisible"
-      @select="popupVisible = false"
-    >
+    <a-dropdown position="bl">
       <a-input
         v-model="searchKey"
         placeholder="搜索文件"
         allow-clear
-        @focus="(fetchAllTreeData(), (popupVisible = true))"
-        @blur="popupVisible = false"
+        @focus="fetchAllTreeData()"
         class="my-2"
       >
         <template #prefix>
@@ -180,9 +171,13 @@ const fetchAllTreeData = async () => {
             {{ repositoryName }}
           </NuxtLink>
         </a-breadcrumb-item>
-        <a-breadcrumb-item v-for="(item, index) in (route.params.path as string[])">
+        <a-breadcrumb-item
+          v-for="(item, index) in route.params.path as string[]"
+        >
           <NuxtLink
-            :to="`/${username}/${repositoryName}/tree/${gitRef}/${(route.params.path as string[])
+            :to="`/${username}/${repositoryName}/tree/${gitRef}/${(
+              route.params.path as string[]
+            )
               .slice(0, index + 1)
               .join('/')}`"
             >{{ item }}</NuxtLink

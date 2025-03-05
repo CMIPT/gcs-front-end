@@ -34,31 +34,24 @@ const extToLanguage: Record<string, string> = {
   xml: "xml",
   yaml: "yaml",
   yml: "yaml",
+  txt: "plaintext",
+  LICENSE: "plaintext",
+  gitignore: "plaintext",
+  env: "plaintext",
+  Dockerfile: "dockerfile",
 };
 const getLanguage = () => {
   const ext = (props.filename || "").split(".").pop() || "";
   if (extToLanguage[ext]) {
     return extToLanguage[ext];
   }
-  return "";
-};
-const result = ref<string>("");
-const getContent = () => {
-  const language = props.language || getLanguage();
-  if (language !== "markdown" && language !== "") {
-    result.value = "```" + language + "\n" + props.content + "\n```";
-  } else if (language === "markdown") {
-    result.value = props.content || "";
-  } else {
-    result.value = (props.content || "").replace(/\n/g, "<br>");
-  }
-  return result.value;
+  return undefined;
 };
 // TODO: line number, diff, etc.
 </script>
 <template>
-  <a-typography v-if="getLanguage() === '' || getLanguage() == 'markdown'">
-    <pre v-html="getContent()" />
+  <a-typography>
+    <pre v-html="props.content" v-if="getLanguage()" />
+    <pre v-else>UNSUPPORTED</pre>
   </a-typography>
-  <MDC :value="getContent()" v-else />
 </template>
