@@ -8,6 +8,12 @@ importers:
 
   .:
     dependencies:
+      '@highlightjs/vue-plugin':
+        specifier: ^2.1.0
+        version: 2.1.0(highlight.js@11.11.1)(vue@3.5.11(typescript@5.7.2))
+      highlight.js:
+        specifier: ^11.11.1
+        version: 11.11.1
       nuxt:
         specifier: ^3.13.0
         version: 3.13.2(@parcel/watcher@2.4.1)(@types/node@22.7.5)(ioredis@5.4.1)(magicast@0.3.5)(rollup@4.24.0)(terser@5.34.1)(typescript@5.7.2)(vite@5.4.8(@types/node@22.7.5)(terser@5.34.1))(vue-tsc@2.1.10(typescript@5.7.2))
@@ -651,6 +657,12 @@ packages:
   '@fastify/busboy@2.1.1':
     resolution: {integrity: sha512-vBZP4NlzfOlerQTnba4aqZoMhE/a9HY7HRqoOPaETQcSQuWEIyZMHGfVu6w9wGtGK5fED5qRs2DteVCjOH60sA==}
     engines: {node: '>=14'}
+
+  '@highlightjs/vue-plugin@2.1.0':
+    resolution: {integrity: sha512-E+bmk4ncca+hBEYRV2a+1aIzIV0VSY/e5ArjpuSN9IO7wBJrzUE2u4ESCwrbQD7sAy+jWQjkV5qCCWgc+pu7CQ==}
+    peerDependencies:
+      highlight.js: ^11.0.1
+      vue: ^3
 
   '@iconify-json/fa6-solid@1.2.1':
     resolution: {integrity: sha512-4H57tDC/xEhy4s7HPSRFuXQ/8gwtIEg33ak+iuiBoQc7kRh8DS6LXSCh4Uh3QNvTcNLDXnwqfQVhPwo0gpInMA==}
@@ -2008,6 +2020,10 @@ packages:
   he@1.2.0:
     resolution: {integrity: sha512-F/1DnUGPopORZi0ni+CvrCgHQ5FyEAHRLSApuYWMmrbSwoN2Mn/7k+Gl38gJnR7yyDZk6WLXwiGod1JOWNDKGw==}
     hasBin: true
+
+  highlight.js@11.11.1:
+    resolution: {integrity: sha512-Xwwo44whKBVCYoliBQwaPvtd/2tYFkRQtXDWj1nackaV2JPXx3L0+Jvd8/qCJ2p+ML0/XVkJ2q+Mr+UVdpJK5w==}
+    engines: {node: '>=12.0.0'}
 
   hookable@5.5.3:
     resolution: {integrity: sha512-Yc+BQe8SvoXH1643Qez1zqLRmbA5rCL+sSmk6TVos0LWVfNIB7PGncdlId77WzLGSIB5KaWgTaNTs2lNVEI6VQ==}
@@ -4086,6 +4102,11 @@ snapshots:
 
   '@fastify/busboy@2.1.1': {}
 
+  '@highlightjs/vue-plugin@2.1.0(highlight.js@11.11.1)(vue@3.5.11(typescript@5.7.2))':
+    dependencies:
+      highlight.js: 11.11.1
+      vue: 3.5.11(typescript@5.7.2)
+
   '@iconify-json/fa6-solid@1.2.1':
     dependencies:
       '@iconify/types': 2.0.0
@@ -5745,6 +5766,8 @@ snapshots:
       function-bind: 1.1.2
 
   he@1.2.0: {}
+
+  highlight.js@11.11.1: {}
 
   hookable@5.5.3: {}
 

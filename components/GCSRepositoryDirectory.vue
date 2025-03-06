@@ -12,9 +12,6 @@ const directoryList = props.directoryList?.sort((a, b) => {
   }
   return a.name.localeCompare(b.name);
 });
-onMounted(() => {
-  console.log(directoryList);
-});
 </script>
 <template>
   <a-list class="my-2">

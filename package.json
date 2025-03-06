@@ -10,6 +10,8 @@
     "postinstall": "nuxt prepare"
   },
   "dependencies": {
+    "@highlightjs/vue-plugin": "^2.1.0",
+    "highlight.js": "^11.11.1",
     "nuxt": "^3.13.0",
     "vue": "latest",
     "vue-router": "latest"
