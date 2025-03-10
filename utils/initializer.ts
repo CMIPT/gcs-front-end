@@ -70,16 +70,21 @@ async function initializeUserInfo() {
   if (useUserInfo().value.id) {
     return;
   }
+  await refreshAccessToken();
   const auth = useUserAuth();
-  if (!auth.value.accessToken && !auth.value.refreshToken) {
+  if (!auth.value.accessToken) {
     return;
   }
   const apiURL = new URL(APIPaths.USER_GET_USER_API_PATH, window.origin);
+  apiURL.searchParams.append("user", auth.value.accessToken);
   apiURL.searchParams.append("userType", "TOKEN");
-  useUserInfo().value = await fetchWithRetry<UserVO>(apiURL.toString()).catch(
-    () => {
-      useUserAuth().value = {} as UserAuthState;
-      return {} as UserVO;
+  useUserInfo().value = await $fetch<UserVO>(apiURL.toString(), {
+    headers: {
+      "access-token": auth.value.accessToken,
     },
-  );
+  }).catch(() => {
+    sessionStorage.removeItem("access-token");
+    localStorage.removeItem("refresh-token");
+    return {} as UserVO;
+  });
 }

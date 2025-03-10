@@ -28,7 +28,7 @@ export async function fetchWithRetry<T>(url: string, options: any = {}) {
   }
 }
 
-async function refreshAccessToken() {
+export async function refreshAccessToken() {
   const userAuth = useUserAuth();
   userAuth.value.accessToken = null;
   if (!userAuth.value.refreshToken) {
@@ -47,7 +47,8 @@ async function refreshAccessToken() {
     .then((resp) => {
       userAuth.value.accessToken = resp.headers.get("access-token");
     })
-    .catch((error) => {
-      console.error("Failed to refresh access token", error);
+    .catch(() => {
+      sessionStorage.removeItem("access-token");
+      localStorage.removeItem("refresh-token");
     });
 }
