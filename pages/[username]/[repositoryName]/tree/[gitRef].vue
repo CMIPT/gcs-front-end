@@ -3,14 +3,15 @@ import type { TreeNodeData } from "@arco-design/web-vue";
 
 const route = useRoute();
 const router = useRouter();
-const searchKey = ref("");
-const repository = ref<RepositoryDetailVO>();
-const insideNestedPath = computed(() => {
-  return route.params.path !== undefined;
-});
+const repositoryDetailVO = ref<RepositoryDetailVO>();
 const username = route.params.username as string;
 const repositoryName = route.params.repositoryName as string;
 const gitRef = route.params.gitRef as string;
+
+const searchKey = ref("");
+const insideNestedPath = computed(() => {
+  return route.params.path !== undefined;
+});
 const collapsed = ref(false);
 const treeData = ref<TreeNodeData>({
   key: "",
@@ -30,29 +31,23 @@ const treeNodeDataComparator = (a: TreeNodeData, b: TreeNodeData) => {
   }
   return a.title.localeCompare(b.title);
 };
-
 const loadMore = async (treeNode: TreeNodeData) => {
-  const key = treeNode.key;
-  if (typeof key !== "string") {
-    return;
-  }
-  if (treeNode.children) {
+  if (typeof treeNode.key !== "string" || treeNode.children) {
     return;
   }
   const apiURL = new URL(
-    APIPaths.REPOSITORY_GET_REPOSITORY_API_PATH,
+    APIPaths.REPOSITORY_GET_REPOSITORY_PATH_WITH_REF_API_PATH,
     window.origin,
   );
   apiURL.searchParams.append("username", username);
   apiURL.searchParams.append("repositoryName", repositoryName);
   apiURL.searchParams.append("ref", gitRef);
-  apiURL.searchParams.append("path", key);
-  const response = await fetchWithRetry<RepositoryDetailVO>(apiURL.toString());
-  if (!repository.value) {
-    repository.value = response;
-  }
+  apiURL.searchParams.append("path", treeNode.key);
+  const response = await fetchWithRetry<RepositoryFileDetailVO>(
+    apiURL.toString(),
+  );
   treeNode.children = [];
-  for (const fileOrDir of response.path.directoryList) {
+  for (const fileOrDir of response.directoryList) {
     treeNode.children.push({
       key:
         treeNode.key === ""
@@ -64,6 +59,23 @@ const loadMore = async (treeNode: TreeNodeData) => {
   }
   treeNode.children.sort(treeNodeDataComparator);
 };
+const fetchRepositoryDetails = async () => {
+  const apiURL = new URL(
+    APIPaths.REPOSITORY_GET_REPOSITORY_API_PATH,
+    window.origin,
+  );
+  apiURL.searchParams.append("username", username);
+  apiURL.searchParams.append("repositoryName", repositoryName);
+  repositoryDetailVO.value = await fetchWithRetry<RepositoryDetailVO>(
+    apiURL.toString(),
+  ).catch((error) => {
+    tryThrowAndShowError(error, "没有找到仓库：" + repositoryName);
+    const message = error.data?.message;
+    Message.error({ id: "fetch-repository", content: message });
+    return undefined;
+  });
+};
+
 onMounted(async () => {
   await initialize();
   if (!useUserInfo().value.id) {
@@ -71,8 +83,10 @@ onMounted(async () => {
     router.push("/login");
     return;
   }
-  await loadMore(treeData.value);
+  fetchRepositoryDetails();
+  loadMore(treeData.value);
 });
+
 const onSelect = (_: Array<string | number>, data: any) => {
   collapsed.value = false;
   router.push(
@@ -86,6 +100,7 @@ const onSelect = (_: Array<string | number>, data: any) => {
       data.node.key,
   );
 };
+
 const filteredFiles = computed(() => {
   return allFiles.value.filter((item) =>
     item.toLowerCase().includes(searchKey.value.toLowerCase()),
@@ -108,7 +123,7 @@ const fetchAllTreeData = async () => {
       }
     }
   };
-  await dfs(treeData.value.children || []);
+  dfs(treeData.value.children || []);
 };
 </script>
 
@@ -153,7 +168,10 @@ const fetchAllTreeData = async () => {
       </template>
     </a-tree>
   </a-layout-sider>
-  <GCSRepository :repository="repository" v-else-if="!insideNestedPath" />
+  <GCSRepository
+    v-else-if="!insideNestedPath && repositoryDetailVO"
+    :repository="repositoryDetailVO"
+  />
   <a-layout-content class="mx-2" v-if="insideNestedPath">
     <a-layout-header>
       <a-button

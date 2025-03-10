@@ -1,12 +1,16 @@
 <script setup lang="ts">
 const router = useRouter();
-const props = defineProps(["repository"]);
-const repository = props.repository as RepositoryDetailVO;
+const props = defineProps<{
+  repository: RepositoryDetailVO;
+}>();
+const repositoryDetailVO = ref<RepositoryDetailVO>(props.repository);
+const username = repositoryDetailVO.value.username;
+const repositoryName = repositoryDetailVO.value.repositoryName;
 const handleChangeVisibility = () => {
   Modal.confirm({
-    title: `修改 ${repository.repositoryVO.username}/${repository.repositoryVO.repositoryName} 的可见性`,
-    content: `您确定要将 ${repository.repositoryVO.username}/${repository.repositoryVO.repositoryName} 设为“${
-      repository.repositoryVO.isPrivate ? "公开" : "私有"
+    title: `修改 ${username}/${repositoryName} 的可见性`,
+    content: `您确定要将 ${username}/${repositoryName} 设为“${
+      repositoryDetailVO.value.isPrivate ? "公开" : "私有"
     }”吗？`,
     onBeforeOk: async () => {
       const apiURL = new URL(
@@ -16,13 +20,14 @@ const handleChangeVisibility = () => {
       await fetchWithRetry(apiURL.toString(), {
         method: "POST",
         body: JSON.stringify({
-          id: repository.repositoryVO.id,
-          isPrivate: !repository.repositoryVO.isPrivate,
+          id: repositoryDetailVO.value.id,
+          isPrivate: !repositoryDetailVO.value.isPrivate,
         }),
       })
         .then(() => {
           Message.success({ content: "修改成功" });
-          repository.repositoryVO.isPrivate = !repository.repositoryVO.isPrivate;
+          repositoryDetailVO.value.isPrivate =
+            !repositoryDetailVO.value.isPrivate;
         })
         .catch((error) => {
           const message = error.data["message"];
@@ -34,14 +39,14 @@ const handleChangeVisibility = () => {
 };
 const handleDeleteRepository = () => {
   Modal.confirm({
-    title: `删除 ${repository.repositoryVO.username}/${repository.repositoryVO.repositoryName}`,
+    title: `删除 ${username}/${repositoryName}`,
     content: `这将无法恢复。您确定要删除吗？`,
     onBeforeOk: async () => {
       const apiURL = new URL(
         APIPaths.REPOSITORY_DELETE_REPOSITORY_API_PATH,
         window.origin,
       );
-      apiURL.searchParams.append("id", repository.repositoryVO.id);
+      apiURL.searchParams.append("id", repositoryDetailVO.value.id);
       await fetchWithRetry(apiURL.toString(), {
         method: "DELETE",
       })
@@ -59,7 +64,7 @@ const handleDeleteRepository = () => {
 };
 </script>
 <template>
-  <div class="max-w-screen-lg mx-10" v-if="repository">
+  <div class="max-w-screen-lg mx-10" v-if="repositoryDetailVO">
     <a-typography-title :heading="3"> 危险区域 </a-typography-title>
     <a-card>
       <a-row justify="space-between">
@@ -68,7 +73,7 @@ const handleDeleteRepository = () => {
           <br />
           <a-typography-text type="secondary">
             仓库的可见性决定了谁可以看到这个仓库，当前仓库的可见性为“{{
-              repository.repositoryVO.isPrivate ? "私有" : "公开"
+              repositoryDetailVO.isPrivate ? "私有" : "公开"
             }}”。
           </a-typography-text>
         </a-col>

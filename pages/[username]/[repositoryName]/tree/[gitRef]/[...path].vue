@@ -4,42 +4,39 @@ const username = route.params.username as string;
 const repositoryName = route.params.repositoryName as string;
 const gitRef = route.params.gitRef as string;
 const path = (route.params.path as string[]).join("/");
+const filename = path.split("/").pop();
 const pathDetail = ref<RepositoryFileDetailVO>();
 
 const fetchPathInfo = async () => {
   const apiURL = new URL(
-    APIPaths.REPOSITORY_GET_REPOSITORY_API_PATH,
+    APIPaths.REPOSITORY_GET_REPOSITORY_PATH_WITH_REF_API_PATH,
     window.origin,
   );
   apiURL.searchParams.append("username", username);
   apiURL.searchParams.append("repositoryName", repositoryName);
   apiURL.searchParams.append("ref", gitRef);
   apiURL.searchParams.append("path", path);
-  const response = await fetchWithRetry<RepositoryDetailVO>(
+  pathDetail.value = await fetchWithRetry<RepositoryFileDetailVO>(
     apiURL.toString(),
   ).catch((error) => {
     tryThrowAndShowError(error, "没有找到仓库: " + gitRef + "/" + path);
     const message = error.data?.message;
     Message.error({ id: "fetch-repository", content: message });
-    return {} as RepositoryDetailVO;
+    return undefined;
   });
-  pathDetail.value = response.path;
 };
 onMounted(async () => {
-  await fetchPathInfo();
+  fetchPathInfo();
 });
 </script>
 <template>
   <GCSRepositoryDirectory
+    v-if="pathDetail?.isDirectory"
     :prefix="`/${username}/${repositoryName}/tree/${gitRef}/${path}`"
     :directoryList="pathDetail.directoryList"
-    v-if="pathDetail?.isDirectory"
   />
-  <a-card v-else class="my-2">
-    <GCSRepositoryFile
-      :filename="path.split('/').pop()"
-      :content="pathDetail?.content"
-    />
+  <a-card v-else-if="pathDetail && filename" class="my-2">
+    <GCSRepositoryFile :filename="filename" :content="pathDetail.content" />
   </a-card>
   <GCSReadmeAndLicense
     :readmeContent="pathDetail?.readmeContent"

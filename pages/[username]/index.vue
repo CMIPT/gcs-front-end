@@ -12,12 +12,11 @@ const newAvatarUrl = ref("");
 const userRepositoryList = ref<RepositoryVO[]>();
 const total = ref(0);
 const currentPage = ref(1);
-const defaultPageSize = ref(10);
+const pageSize = ref(10);
+const orderBy = ref("GMT_CREATED");
+const isAsc = ref(false);
 
 const handleUpdateAvatar = async () => {
-  if (!userInfo.value.id) {
-    throw new Error("用户未登录");
-  }
   if (newAvatarUrl.value === userInfo.value.avatarUrl) {
     return;
   }
@@ -31,6 +30,9 @@ const handleUpdateAvatar = async () => {
     .then(() => {
       Message.success({ content: "修改成功" });
       userInfo.value.avatarUrl = newAvatarUrl.value;
+      if (isSameUser.value && currentUser.value) {
+        currentUser.value.avatarUrl = newAvatarUrl.value;
+      }
       return true;
     })
     .catch((error) => {
@@ -55,15 +57,17 @@ const fetchCurrentUser = async () => {
   );
 };
 
-const fetchRepositories = async (page: number) => {
+const pageRepositories = async () => {
   const apiURL = new URL(
     APIPaths.REPOSITORY_PAGE_REPOSITORY_API_PATH,
     window.origin,
   );
   apiURL.searchParams.append("user", username.value);
   apiURL.searchParams.append("userType", "USERNAME");
-  apiURL.searchParams.append("page", page.toString());
-  apiURL.searchParams.append("size", defaultPageSize.value.toString());
+  apiURL.searchParams.append("page", currentPage.value.toString());
+  apiURL.searchParams.append("size", pageSize.value.toString());
+  apiURL.searchParams.append("orderBy", orderBy.value);
+  apiURL.searchParams.append("isAsc", isAsc.value.toString());
   await fetchWithRetry<PageVO<RepositoryVO>>(apiURL.toString())
     .then((response) => {
       userRepositoryList.value = response.records;
@@ -81,22 +85,31 @@ onMounted(async () => {
     router.push("/login");
     return;
   }
-  await fetchCurrentUser();
-  fetchRepositories(currentPage.value);
+  fetchCurrentUser();
+  pageRepositories();
 });
 
 const paginationProps = computed(() => {
   return {
-    defaultPageSize: defaultPageSize.value,
+    defaultPageSize: pageSize.value,
     total: total.value,
     current: currentPage.value,
-    onChange: (page: number) => {
-      currentPage.value = page;
-      fetchRepositories(page);
-    },
+    showPageSize: true,
+    showJumper: true,
+    showTotal: true,
   } as PaginationProps;
 });
 
+const handlePageSizeChange = (size: number) => {
+  currentPage.value = (pageSize.value * (currentPage.value - 1)) / size + 1;
+  pageSize.value = size;
+  pageRepositories();
+};
+
+const handlePageChange = (page: number) => {
+  currentPage.value = page;
+  pageRepositories();
+};
 const isSameUser = computed(() => {
   if (!userInfo.value || !userInfo.value.username) {
     return false;
@@ -110,7 +123,7 @@ const isSameUser = computed(() => {
     <a-row>
       <a-col flex="none" :style="{ 'margin-top': '5%', 'margin-right': '1%' }">
         <a-avatar
-          :trigger-type="isSameUser ? 'mask' : 'button'"
+          :trigger-type="'mask'"
           :size="300"
           :image-url="currentUser.avatarUrl"
           @click="
@@ -125,7 +138,7 @@ const isSameUser = computed(() => {
             }
           "
         >
-          <template #trigger-icon>
+          <template #trigger-icon v-if="isSameUser">
             <IconEdit />
           </template>
         </a-avatar>
@@ -138,6 +151,8 @@ const isSameUser = computed(() => {
           :bordered="false"
           :data="userRepositoryList"
           :pagination-props="paginationProps"
+          @page-change="handlePageChange"
+          @page-size-change="handlePageSizeChange"
         >
           <template #item="{ item }">
             <NuxtLink :to="`/${item.username}/${item.repositoryName}`">

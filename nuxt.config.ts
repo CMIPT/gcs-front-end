@@ -8,7 +8,7 @@ export default defineNuxtConfig({
     "arco-design-nuxt-module",
   ],
   routeRules: {
-    "/api/gcs/**": {
+    "/api/**": {
       proxy: "http://localhost:8080/api/**",
     },
   },

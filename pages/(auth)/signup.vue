@@ -4,7 +4,6 @@ import { type FormInstance, type FieldRule } from "@arco-design/web-vue";
 const formRef = ref<FormInstance>();
 const signupLoading = ref<boolean>(false);
 const sendCodeLoading = ref<boolean>(false);
-const router = useRouter();
 
 const signupWidth = "400px";
 
@@ -21,7 +20,6 @@ type SignupFormState = {
   password: boolean;
   confirmPassword: boolean;
   email: boolean;
-  verificationCode: boolean;
   canResendCode: boolean;
   resendCodeCountdown: number;
 };
@@ -39,7 +37,6 @@ const formState = reactive<SignupFormState>({
   password: false,
   confirmPassword: false,
   email: false,
-  verificationCode: false,
   canResendCode: true,
   resendCodeCountdown: 0,
 });
@@ -81,13 +78,7 @@ const passwordRules: FieldRule[] = [
 const confirmPasswordRules: FieldRule[] = [
   {
     validator: (value, cb) => {
-      if (value && form.password && value !== form.password) {
-        formState.confirmPassword = false;
-        cb("两次输入密码不一致");
-        return;
-      }
-      formState.confirmPassword = true;
-      cb();
+      formState.confirmPassword = confirmPasswordValidator(value, form, cb);
     },
   },
 ];
@@ -100,33 +91,24 @@ const emailRules: FieldRule[] = [
   },
 ];
 
-const verificationCodeRules: FieldRule[] = [
-  {
-    validator: (value, cb) => {
-      formState.verificationCode = verificationCodeValidator(value, cb);
-    },
-  },
-];
-
 const formRules = {
   username: usernameRules,
   password: passwordRules,
   confirmPassword: confirmPasswordRules,
   email: emailRules,
-  verificationCode: verificationCodeRules,
 };
 
 const isFormValid = computed(() => {
-  return (
-    formState.username &&
-    formState.password &&
-    formState.confirmPassword &&
-    formState.email &&
-    formState.verificationCode
-  );
+  return Object.values(formState).every((state) => state);
 });
 
 const handleGetVerificationCode = async () => {
+  if (!formState.email) {
+    await formRef.value?.validateField("email");
+    if (!formState.email) {
+      return;
+    }
+  }
   sendCodeLoading.value = true;
   formState.canResendCode = false;
   const apiURL = new URL(
@@ -149,13 +131,19 @@ const handleGetVerificationCode = async () => {
     .catch((error) => {
       const message = error.data["message"];
       Message.error(message);
-    })
-    .finally(() => {
-      sendCodeLoading.value = false;
     });
+  sendCodeLoading.value = false;
 };
+
 const handleSignup = async () => {
   signupLoading.value = true;
+  if (!isFormValid.value) {
+    await formRef.value?.validate();
+    if (!isFormValid.value) {
+      signupLoading.value = false;
+      return;
+    }
+  }
   const apiURL = new URL(APIPaths.USER_CREATE_USER_API_PATH, window.origin);
   await $fetch(apiURL.toString(), {
     method: "POST",
@@ -191,30 +179,34 @@ const handleSignup = async () => {
       ref="formRef"
       @submit-success="handleSignup"
     >
-      <a-form-item field="username" label="用户名" validate-trigger="blur">
+      <a-form-item field="username" label="用户名">
         <a-input v-model="form.username" placeholder="请输入用户名" />
       </a-form-item>
-      <a-form-item field="password" label="密码" validate-trigger="blur">
+      <a-form-item field="password" label="密码">
         <a-input-password v-model="form.password" placeholder="请输入密码" />
       </a-form-item>
-      <a-form-item
-        field="confirmPassword"
-        label="确认密码"
-        validate-trigger="blur"
-      >
+      <a-form-item field="confirmPassword" label="确认密码">
         <a-input-password
           v-model="form.confirmPassword"
           placeholder="请再一次确认密码"
         />
       </a-form-item>
-      <a-form-item field="email" label="邮箱" validate-trigger="blur">
+      <a-form-item field="email" label="邮箱">
         <a-input v-model="form.email" placeholder="请输入邮箱" />
       </a-form-item>
       <a-form-item field="verificationCode" label="验证码">
-        <a-input v-model="form.verificationCode" :max-length="6" />
+        <a-verification-code
+          v-model="form.verificationCode"
+          style="width: 200px"
+          :formatter="
+            (inputValue) => (/^\d*$/.test(inputValue) ? inputValue : false)
+          "
+          @finish="handleSignup"
+        />
         <a-button
           type="primary"
-          :disabled="!formState.canResendCode || !formState.email"
+          class="ml-auto"
+          :disabled="!formState.canResendCode"
           @click="handleGetVerificationCode"
           :loading="sendCodeLoading"
         >
@@ -230,7 +222,6 @@ const handleSignup = async () => {
           type="primary"
           class="ml-auto"
           html-type="submit"
-          :disabled="!isFormValid"
           :loading="signupLoading"
         >
           注册

@@ -44,12 +44,19 @@ export async function emailValidator(value: string, cb: any, reverse = false) {
     });
 }
 
-export function verificationCodeValidator(value: string, cb: any) {
-  if (/^\d{6}$/.test(value)) {
+export function confirmPasswordValidator(
+  value: string,
+  form: any,
+  cb: any,
+) {
+  if (!form.password) {
+    cb();
+    return false;
+  } else if (value !== form.password) {
+    cb("两次输入密码不一致");
+    return false;
+  } else {
     cb();
     return true;
-  } else {
-    cb("请输入6位验证码");
-    return false;
   }
 }
