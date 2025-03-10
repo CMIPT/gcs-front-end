@@ -6,9 +6,11 @@ const userInfo = useUserInfo();
 const userRepositoryList = ref<RepositoryVO[]>([]);
 const total = ref(0);
 const currentPage = ref(1);
-const defaultPageSize = ref(10);
+const pageSize = ref(10);
+const orderBy = ref("GMT_CREATED");
+const isAsc = ref(false);
 
-const fetchRepositories = async (page: number) => {
+const pageRepositories = async () => {
   if (!userInfo.value.id) {
     // 还没有登录状态时不查询仓库列表
     return;
@@ -19,8 +21,10 @@ const fetchRepositories = async (page: number) => {
   );
   apiURL.searchParams.append("user", userInfo.value.id);
   apiURL.searchParams.append("userType", "ID");
-  apiURL.searchParams.append("page", page.toString());
-  apiURL.searchParams.append("size", defaultPageSize.value.toString());
+  apiURL.searchParams.append("page", currentPage.value.toString());
+  apiURL.searchParams.append("size", pageSize.value.toString());
+  apiURL.searchParams.append("orderBy", orderBy.value);
+  apiURL.searchParams.append("isAsc", isAsc.value.toString());
   const response = await fetchWithRetry<PageVO<RepositoryVO>>(
     apiURL.toString(),
   );
@@ -30,20 +34,30 @@ const fetchRepositories = async (page: number) => {
 
 onMounted(async () => {
   await initialize();
-  fetchRepositories(currentPage.value);
+  pageRepositories();
 });
 
 const paginationProps = computed(() => {
   return {
-    defaultPageSize: defaultPageSize.value,
+    defaultPageSize: pageSize.value,
     total: total.value,
     current: currentPage.value,
-    onChange: (page: number) => {
-      currentPage.value = page;
-      fetchRepositories(page);
-    },
+    showPageSize: true,
+    showJumper: true,
+    showTotal: true,
   } as PaginationProps;
 });
+
+const handlePageSizeChange = (size: number) => {
+  currentPage.value = (pageSize.value * (currentPage.value - 1)) / size + 1;
+  pageSize.value = size;
+  pageRepositories();
+};
+
+const handlePageChange = (page: number) => {
+  currentPage.value = page;
+  pageRepositories();
+};
 </script>
 
 <template>
@@ -55,6 +69,8 @@ const paginationProps = computed(() => {
       :bordered="false"
       :data="userRepositoryList"
       :pagination-props="paginationProps"
+      @page-change="handlePageChange"
+      @page-size-change="handlePageSizeChange"
     >
       <template #item="{ item }">
         <NuxtLink :to="`/${item.username}/${item.repositoryName}`">

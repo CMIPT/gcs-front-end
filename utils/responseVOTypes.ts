@@ -3,16 +3,26 @@ export type ErrorVO = {
   message: string;
 };
 export type PageVO<T> = {
-  pages: number;
   total: number;
   records: Array<T>;
 };
 export type RepositoryDetailVO = {
-  repositoryVO: RepositoryVO;
+  id: string;
+  repositoryName: string;
+  repositoryDescription: string;
+  isPrivate: boolean;
+  gmtCreated: string;
+  userId: string;
+  username: string;
+  avatarUrl: string;
+  star: number;
+  fork: number;
+  watcher: number;
+  httpsUrl: string;
+  sshUrl: string;
   branchList: Array<string>;
   tagList: Array<string>;
   defaultRef: string;
-  path: RepositoryFileDetailVO;
 };
 export type UserVO = {
   id: string;
@@ -42,12 +52,17 @@ export type RepositoryVO = {
   repositoryName: string;
   repositoryDescription: string;
   isPrivate: boolean;
-  userId: string;
+  gmtCreated: string;
   username: string;
   avatarUrl: string;
   star: number;
   fork: number;
   watcher: number;
-  httpsUrl: string;
-  sshUrl: string;
+};
+export type CollaboratorVO = {
+  id: string;
+  collaboratorId: string;
+  username: string;
+  email: string;
+  avatarUrl: string;
 };

@@ -14,6 +14,7 @@ import javascript from "highlight.js/lib/languages/javascript";
 import json from "highlight.js/lib/languages/json";
 import lua from "highlight.js/lib/languages/lua";
 import python from "highlight.js/lib/languages/python";
+import shell from "highlight.js/lib/languages/shell";
 import sql from "highlight.js/lib/languages/sql";
 import typescript from "highlight.js/lib/languages/typescript";
 import xml from "highlight.js/lib/languages/xml";
@@ -38,6 +39,7 @@ export default defineNuxtPlugin((nuxtApp) => {
   hljs.registerLanguage("json", json);
   hljs.registerLanguage("lua", lua);
   hljs.registerLanguage("python", python);
+  hljs.registerLanguage("shell", shell);
   hljs.registerLanguage("sql", sql);
   hljs.registerLanguage("typescript", typescript);
   hljs.registerLanguage("xml", xml);

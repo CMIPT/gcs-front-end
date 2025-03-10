@@ -17,7 +17,6 @@ type ResetPasswordFormState = {
   email: boolean;
   password: boolean;
   confirmPassword: boolean;
-  verificationCode: boolean;
   canResendCode: boolean;
   resendCodeCountdown: number;
 };
@@ -33,7 +32,6 @@ const formState = reactive<ResetPasswordFormState>({
   email: false,
   password: false,
   confirmPassword: false,
-  verificationCode: false,
   canResendCode: true,
   resendCodeCountdown: 0,
 });
@@ -52,13 +50,7 @@ const passwordRules: FieldRule[] = [
 const confirmPasswordRules: FieldRule[] = [
   {
     validator: (value, cb) => {
-      if (value && form.password && value !== form.password) {
-        formState.confirmPassword = false;
-        cb("两次输入密码不一致");
-        return;
-      }
-      formState.confirmPassword = true;
-      cb();
+      formState.confirmPassword = confirmPasswordValidator(value, form, cb);
     },
   },
 ];
@@ -71,32 +63,25 @@ const emailRules: FieldRule[] = [
   },
 ];
 
-const verificationCodeRules: FieldRule[] = [
-  {
-    validator: (value, cb) => {
-      formState.verificationCode = verificationCodeValidator(value, cb);
-    },
-  },
-];
-
 const formRules = {
   password: passwordRules,
   confirmPassword: confirmPasswordRules,
   email: emailRules,
-  verificationCode: verificationCodeRules,
 };
 
 const isFormValid = computed(() => {
-  return (
-    formState.password &&
-    formState.confirmPassword &&
-    formState.email &&
-    formState.verificationCode
-  );
+  return Object.values(formState).every((state) => state);
 });
 
 const handleResetPassword = async () => {
   resetLoading.value = true;
+  if (!isFormValid.value) {
+    await formRef.value?.validate();
+    if (!isFormValid.value) {
+      resetLoading.value = false;
+      return;
+    }
+  }
   const apiURL = new URL(
     APIPaths.USER_UPDATE_USER_PASSWORD_WITH_EMAIL_VERIFICATION_CODE_API_PATH,
     window.origin,
@@ -121,7 +106,13 @@ const handleResetPassword = async () => {
     });
 };
 
-const handleGetVerificationCode = async() => {
+const handleGetVerificationCode = async () => {
+  if (!formState.email) {
+    await formRef.value?.validateField("email");
+    if (!formState.email) {
+      return;
+    }
+  }
   sendCodeLoading.value = true;
   formState.canResendCode = false;
   const apiURL = new URL(
@@ -144,10 +135,8 @@ const handleGetVerificationCode = async() => {
     .catch((error) => {
       const message = error.data["message"];
       Message.error(message);
-    })
-    .finally(() => {
-      sendCodeLoading.value = false;
     });
+  sendCodeLoading.value = false;
 };
 </script>
 <template>
@@ -180,10 +169,18 @@ const handleGetVerificationCode = async() => {
         <a-input v-model="form.email" placeholder="请输入邮箱" />
       </a-form-item>
       <a-form-item field="verificationCode" label="验证码">
-        <a-input v-model="form.verificationCode" :max-length="6" />
+        <a-verification-code
+          v-model="form.verificationCode"
+          style="width: 200px"
+          :formatter="
+            (inputValue) => (/^\d*$/.test(inputValue) ? inputValue : false)
+          "
+          @finish="handleResetPassword"
+        />
         <a-button
           type="primary"
-          :disabled="!formState.canResendCode || !formState.email"
+          class="ml-auto"
+          :disabled="!formState.canResendCode"
           @click="handleGetVerificationCode"
           :loading="sendCodeLoading"
         >
@@ -199,7 +196,6 @@ const handleGetVerificationCode = async() => {
           type="primary"
           class="ml-auto"
           html-type="submit"
-          :disabled="!isFormValid"
           :loading="resetLoading"
         >
           重置密码

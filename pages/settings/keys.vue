@@ -13,10 +13,12 @@ type SshKeyForm = {
 const router = useRouter();
 const route = useRoute();
 const userInfo = useUserInfo();
-const defaultPageSize = ref(10);
 const total = ref(0);
 const currentPage = ref(1);
-const userSshKeyList = ref<SshKeyVO[]>();
+const pageSize = ref(10);
+const orderBy = ref("GMT_CREATED");
+const isAsc = ref(false);
+const userSshKeyList = ref<SshKeyVO[]>([]);
 const editingIndex = ref<number | null>(null);
 const isModalVisible = ref(false);
 
@@ -35,6 +37,14 @@ const formState = reactive({
 const sshNameRules: FieldRule[] = [
   {
     validator: async (value, cb) => {
+      if (
+        editingIndex.value != null &&
+        value === userSshKeyList.value[editingIndex.value].name
+      ) {
+        formState.name = true;
+        cb();
+        return;
+      }
       const name = value || "";
       const apiURL = new URL(
         APIPaths.SSH_KEY_CHECK_SSH_KEY_NAME_VALIDITY_API_PATH,
@@ -55,9 +65,17 @@ const sshNameRules: FieldRule[] = [
   },
 ];
 
-const sshKeyRules: FieldRule[] = [
+const sshPublicKeyRules: FieldRule[] = [
   {
     validator: async (value, cb) => {
+      if (
+        editingIndex.value != null &&
+        value === userSshKeyList.value[editingIndex.value].publicKey
+      ) {
+        formState.publicKey = true;
+        cb();
+        return;
+      }
       const publicKey = value || "";
       const apiURL = new URL(
         APIPaths.SSH_KEY_CHECK_SSH_KEY_PUBLIC_KEY_VALIDITY_API_PATH,
@@ -80,23 +98,25 @@ const sshKeyRules: FieldRule[] = [
 
 const formRules = {
   name: sshNameRules,
-  publicKey: sshKeyRules,
+  publicKey: sshPublicKeyRules,
 };
 
 const isFormValid = computed(() => {
   return Object.values(formState).every((state) => state);
 });
 
-const fetchSshKeys = async (page: number) => {
+const pageSshKeys = async () => {
   const apiURL = new URL(APIPaths.SSH_KEY_PAGE_SSH_KEY_API_PATH, window.origin);
-  apiURL.searchParams.append("page", page.toString());
-  apiURL.searchParams.append("size", defaultPageSize.value.toString());
+  apiURL.searchParams.append("page", currentPage.value.toString());
+  apiURL.searchParams.append("size", pageSize.value.toString());
+  apiURL.searchParams.append("orderBy", orderBy.value);
+  apiURL.searchParams.append("isAsc", isAsc.value.toString());
   try {
     const response = await fetchWithRetry<PageVO<SshKeyVO>>(apiURL.toString());
     userSshKeyList.value = response.records;
     total.value = response.total;
-  } catch (error) {
-    console.error("Error fetching SSH keys:", error);
+  } catch (error: any) {
+    Message.error({ id: "page-ssh-keys", content: error.data.message });
   }
 };
 
@@ -107,9 +127,7 @@ const addSSH = () => {
   form.value.name = "";
   form.value.publicKey = "";
   isModalVisible.value = true;
-  if (formRef.value) {
-    formRef.value.clearValidate();
-  }
+  formRef.value?.clearValidate();
 };
 
 const editSSH = (index: number) => {
@@ -123,15 +141,10 @@ const editSSH = (index: number) => {
   form.value.publicKey = sshKey.publicKey;
   editingIndex.value = index;
   isModalVisible.value = true;
-  if (formRef.value) {
-    formRef.value.clearValidate();
-  }
+  formRef.value?.clearValidate();
 };
 
 const deleteSSH = async (index: number) => {
-  if (userSshKeyList.value === undefined) {
-    throw new Error("SSH key list is undefined");
-  }
   const sshKey = userSshKeyList.value[index];
   Modal.confirm({
     title: "确认删除",
@@ -147,9 +160,11 @@ const deleteSSH = async (index: number) => {
       })
         .then(() => {
           Message.success({ content: "删除成功" });
-          // BUG:
           // When the last SSH key of current page is deleted, the page should decrease by 1.
-          fetchSshKeys(currentPage.value);
+          if (userSshKeyList.value?.length === 1 && currentPage.value > 1) {
+            currentPage.value -= 1;
+          }
+          pageSshKeys();
         })
         .catch((error) => {
           const message = error.data["message"];
@@ -161,15 +176,18 @@ const deleteSSH = async (index: number) => {
 };
 
 const handleAddOrEditSSHKeyConfirm = async () => {
+  if (!isFormValid.value) {
+    await formRef.value?.validate();
+    if (!isFormValid.value) {
+      return false;
+    }
+  }
   if (editingIndex.value !== null) {
     // Update SSH key
     const apiURL = new URL(
       APIPaths.SSH_KEY_UPDATE_SSH_KEY_API_PATH,
       window.origin,
     );
-    if (userSshKeyList.value === undefined) {
-      throw new Error("SSH key list is undefined");
-    }
     const sshKey = userSshKeyList.value[editingIndex.value];
     // No need to update if the SSH key is not changed
     if (
@@ -183,12 +201,19 @@ const handleAddOrEditSSHKeyConfirm = async () => {
       body: {
         id: sshKey.id,
         name: form.value.name === sshKey.name ? null : form.value.name,
-        publicKey: form.value.publicKey === sshKey.publicKey ? null : form.value.publicKey,
+        publicKey:
+          form.value.publicKey === sshKey.publicKey
+            ? null
+            : form.value.publicKey,
       },
     })
       .then(() => {
         Message.success({ content: "更新成功" });
-        fetchSshKeys(currentPage.value);
+        if (editingIndex.value) {
+          userSshKeyList.value[editingIndex.value].name = form.value.name;
+          userSshKeyList.value[editingIndex.value].publicKey =
+            form.value.publicKey;
+        }
         return true;
       })
       .catch((error) => {
@@ -211,7 +236,7 @@ const handleAddOrEditSSHKeyConfirm = async () => {
     })
       .then(() => {
         Message.success({ content: "添加成功" });
-        fetchSshKeys(currentPage.value);
+        pageSshKeys();
         return true;
       })
       .catch((error) => {
@@ -228,15 +253,15 @@ const handleAddOrEditSSHKeyCancel = () => {
 
 const paginationProps = computed(() => {
   return {
-    defaultPageSize: defaultPageSize.value,
+    defaultPageSize: pageSize.value,
     total: total.value,
     current: currentPage.value,
-    onChange: (page: number) => {
-      currentPage.value = page;
-      fetchSshKeys(page);
-    },
   } as PaginationProps;
 });
+const handlePageChange = (page: number) => {
+  currentPage.value = page;
+  pageSshKeys();
+};
 
 onMounted(async () => {
   await initialize();
@@ -245,7 +270,7 @@ onMounted(async () => {
     router.push("/login");
     return;
   }
-  fetchSshKeys(currentPage.value);
+  pageSshKeys();
 });
 </script>
 
@@ -263,6 +288,7 @@ onMounted(async () => {
       :bordered="false"
       :data="userSshKeyList"
       :pagination-props="paginationProps"
+      @page-change="handlePageChange"
     >
       <template #item="{ item, index }">
         <a-list-item action-layout="vertical">
@@ -279,7 +305,6 @@ onMounted(async () => {
     title="添加公钥"
     v-model:visible="isModalVisible"
     :on-before-ok="handleAddOrEditSSHKeyConfirm"
-    :ok-button-props="{ disabled: !isFormValid }"
     @cancel="handleAddOrEditSSHKeyCancel"
   >
     <a-form :model="form" :rules="formRules" layout="vertical" ref="formRef">

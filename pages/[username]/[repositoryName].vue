@@ -3,7 +3,7 @@ import type { RepositoryDetailVO } from "~/utils/responseVOTypes";
 
 const route = useRoute();
 const router = useRouter();
-const repository = ref<RepositoryDetailVO>();
+const repositoryDetailVO = ref<RepositoryDetailVO>();
 const userInfo = useUserInfo();
 const selectedMenu = ref<string>(route.path.split("/")[3] || "code");
 const username = route.params.username as string;
@@ -16,13 +16,13 @@ const fetchRepositoryDetails = async () => {
   );
   apiURL.searchParams.append("username", username);
   apiURL.searchParams.append("repositoryName", repositoryName);
-  repository.value = await fetchWithRetry<RepositoryDetailVO>(
+  repositoryDetailVO.value = await fetchWithRetry<RepositoryDetailVO>(
     apiURL.toString(),
   ).catch((error) => {
     tryThrowAndShowError(error, "没有找到仓库：" + repositoryName);
     const message = error.data?.message;
     Message.error({ id: "fetch-repository", content: message });
-    return {} as RepositoryDetailVO;
+    return undefined;
   });
 };
 
@@ -69,7 +69,7 @@ definePageMeta({
       <a-menu
         mode="horizontal"
         :default-selected-keys="[selectedMenu]"
-        v-if="repository"
+        v-if="repositoryDetailVO"
       >
         <NuxtLink
           :to="
@@ -96,7 +96,7 @@ definePageMeta({
           合并请求
         </a-menu-item>
         <NuxtLink
-          v-if="repository?.repositoryVO.userId === userInfo.id"
+          v-if="repositoryDetailVO?.userId === userInfo.id"
           :to="`/${username}/${repositoryName}/settings`"
         >
           <a-menu-item key="settings">
@@ -106,8 +106,8 @@ definePageMeta({
         </NuxtLink>
       </a-menu>
     </a-layout-header>
-    <a-layout v-if="repository" class="repository-detail">
-      <NuxtPage :repository="repository" />
+    <a-layout v-if="repositoryDetailVO" class="repository-detail">
+      <NuxtPage :repository="repositoryDetailVO" />
     </a-layout>
     <GCSFooter />
   </a-layout>
