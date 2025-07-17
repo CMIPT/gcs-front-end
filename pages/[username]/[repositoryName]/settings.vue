@@ -46,6 +46,14 @@ onMounted(async () => {
           合作者
         </a-menu-item>
       </NuxtLink>
+      <NuxtLink
+        :to="`/${repository?.username}/${repository?.repositoryName}/settings/labels`"
+      >
+        <a-menu-item key="labels">
+          <template #icon><icon-tag /></template>
+          标签
+        </a-menu-item>
+      </NuxtLink>
     </a-menu>
   </a-layout-sider>
   <a-layout-content>

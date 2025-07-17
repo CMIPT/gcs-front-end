@@ -12,4 +12,17 @@ export default defineNuxtConfig({
       proxy: "http://localhost:8080/api/**",
     },
   },
+  vite: {
+    server: {
+      hmr: {
+        protocol: 'ws',
+        host: 'localhost',
+        port: 24678
+      },
+      watch: {
+        usePolling: true,
+        interval: 1000
+      }
+    }
+  }
 });

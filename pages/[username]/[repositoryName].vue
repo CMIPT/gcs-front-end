@@ -85,11 +85,13 @@ definePageMeta({
             代码
           </a-menu-item>
         </NuxtLink>
-        <a-menu-item key="issues">
-          <!-- TODO: icon not found -->
-          <!-- <template #icon><icon-issue /></template> -->
-          问题
-        </a-menu-item>
+        <NuxtLink :to="`/${username}/${repositoryName}/issues`">
+          <a-menu-item key="issues">
+            <!-- TODO: icon not found -->
+            <!-- <template #icon><icon-issue /></template> -->
+            问题
+          </a-menu-item>
+        </NuxtLink>
         <a-menu-item key="pr">
           <!-- TODO: icon not found -->
           <!-- <template #icon><icon-pull-request /></template> -->
