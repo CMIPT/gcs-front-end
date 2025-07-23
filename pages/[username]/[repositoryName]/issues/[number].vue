@@ -23,6 +23,7 @@ const {
   addAssignee,
   removeAssignee,
   checkActivityOperationValidity,
+  checkCommentOperationValidity,
   createSubIssue,
   addSubIssue,
   removeSubIssue,
@@ -85,10 +86,14 @@ const issueSearch = ref('');
 // 权限相关
 const permissionErrorVisible = ref(false);
 const permissionErrorMessage = ref('');
-const hasModifyPermission = ref(false);
-const hasCommentPermission = ref(false);
+const hasModifyActivityPermission = ref(false);
+const hasAttachCommentPermission = ref(false); // 新增
 const permissionLoading = ref(false);
 
+const goToUserHome = (username: string) => {
+  if (!username) return;
+  router.push({ path: `/${username}` });
+};
 // 获取仓库信息
 const fetchRepositoryDetails = async () => {
   const apiURL = new URL(APIPaths.REPOSITORY_GET_REPOSITORY_API_PATH, window.origin);
@@ -142,76 +147,49 @@ const fetchRepositoryCollaborators = async () => {
 };
 
 // 检查修改权限
-const checkModifyPermission = async () => {
+const checkModifyActivityPermission = async () => {
   if (!issue.value) return;
   
   permissionLoading.value = true;
   try {
     await checkActivityOperationValidity({
       id: issue.value.id,
-      operationType: 'MODIFY'
+      operationType: 'MODIFY_ACTIVITY'
     });
-    hasModifyPermission.value = true;
+    hasModifyActivityPermission.value = true;
   } catch (error: any) {
-    // 如果是权限错误，设置权限为false
-    if (error.data?.code === 7) {
-      hasModifyPermission.value = false;
-    } else {
-      // 其他错误，默认有权限（避免因为网络等问题影响用户体验）
-      hasModifyPermission.value = true;
-    }
+      hasModifyActivityPermission.value = false;
   } finally {
     permissionLoading.value = false;
   }
 };
 
-// 检查评论权限
-const checkCommentPermission = async () => {
+// 检查评论创建权限
+const checkAttachCommentPermission = async () => {
   if (!issue.value) return;
-  
   try {
     await checkActivityOperationValidity({
       id: issue.value.id,
-      operationType: 'CREATE'
+      operationType: 'ATTACH_COMMENT'
     });
-    hasCommentPermission.value = true;
+    hasAttachCommentPermission.value = true;
   } catch (error: any) {
-    // 如果是权限错误，设置权限为false
-    if (error.data?.code === 7) {
-      hasCommentPermission.value = false;
-    } else {
-      // 其他错误，默认有权限（避免因为网络等问题影响用户体验）
-      hasCommentPermission.value = true;
-    }
+    hasAttachCommentPermission.value = false;
   }
 };
 
 // 检查评论修改权限
 const checkCommentModifyPermission = async (commentId: string) => {
   try {
-    // 这里需要检查当前用户是否有权限修改该评论
-    // 由于后端API需要activityId，我们需要先获取评论信息
-    const comment = comments.value.find(c => c.id === commentId);
-    if (!comment) return false;
-    
-    // 检查是否是评论作者或有修改权限
-    const currentUser = useUserInfo().value;
-    if (comment.userId === currentUser.id) {
-      return true;
-    }
-    
-    // 如果不是作者，检查是否有修改权限
-    await checkActivityOperationValidity({
-      id: comment.activityId,
-      operationType: 'MODIFY'
+    // 使用新的评论权限检查API
+    await checkCommentOperationValidity({
+      id: commentId,
+      operationType: 'MODIFY_COMMENT'
     });
     return true;
   } catch (error: any) {
-    if (error.data?.code === 7) {
       return false;
     }
-    return false;
-  }
 };
 
 // 开始编辑评论
@@ -229,26 +207,20 @@ const startEditComment = async (comment: CommentFullInfoVO) => {
 // 保存评论编辑
 const saveCommentEdit = async () => {
   if (!editingCommentId.value || !editingCommentContent.value.trim()) return;
-  
-  try {
-    await updateCommentContent({
-      id: editingCommentId.value,
-      content: editingCommentContent.value
+  await updateCommentContent({
+    id: editingCommentId.value,
+    content: editingCommentContent.value
+  })
+    .then(() => {
+      Message.success({ content: '评论更新成功' });
+      editingCommentId.value = null;
+      editingCommentContent.value = '';
+      return fetchComments();
+    })
+    .catch((error) => {
+      const message = error.data["message"];
+      Message.error({ content: message });
     });
-    
-    Message.success('评论更新成功');
-    editingCommentId.value = null;
-    editingCommentContent.value = '';
-    
-    // 重新获取评论列表
-    await fetchComments();
-  } catch (error: any) {
-    if (error.data?.code === 7) {
-      Message.error('您没有权限编辑此评论');
-    } else {
-      tryThrowAndShowError(error, '更新评论失败');
-    }
-  }
 };
 
 // 取消评论编辑
@@ -259,49 +231,34 @@ const cancelCommentEdit = () => {
 
 // 删除评论
 const deleteCommentById = async (commentId: string) => {
-  try {
-    await Modal.confirm({
-      title: '确认删除',
-      content: '确定要删除这条评论吗？此操作不可撤销。',
-      okText: '删除',
-      cancelText: '取消',
-      okButtonProps: { status: 'danger' },
-      onBeforeOk: async () => {
-        try {
-          await deleteComment(commentId);
-          Message.success('评论删除成功');
-          
-          // 重新获取评论列表
-          await fetchComments();
-          return true; // 返回true表示操作成功，Modal会关闭
-        } catch (error: any) {
-          if (error.data?.code === 7) {
-            Message.error('您没有权限删除此评论');
-          } else {
-            tryThrowAndShowError(error, '删除评论失败');
-          }
-          return false; // 返回false表示操作失败，Modal不会关闭
-        }
-      }
-    });
-  } catch (error: any) {
-    // 这里处理Modal.confirm本身的错误（比如用户取消）
-    console.log('用户取消删除操作');
+  const hasPermission = await checkCommentModifyPermission(commentId);
+  if (!hasPermission) {
+    Message.error({ content: '您没有权限删除此评论' });
+    return;
   }
+  Modal.confirm({
+    title: '确认删除',
+    content: '确定要删除这条评论吗？此操作不可撤销。',
+    okText: '删除',
+    cancelText: '取消',
+    okButtonProps: { status: 'danger' },
+    onBeforeOk: async () => {
+      return await deleteComment(commentId)
+        .then(async () => {
+          Message.success({ content: '评论删除成功' });
+          await fetchComments();
+          return true;
+        })
+        .catch((error) => {
+          const message = error.data?.message || '删除评论失败';
+          Message.error({ content: message });
+          return false;
+        });
+    }
+  });
 };
 
-// 检查是否可以编辑/删除评论
-const canModifyComment = (comment: CommentFullInfoVO) => {
-  const currentUser = useUserInfo().value;
-  return comment.userId === currentUser.id || hasModifyPermission.value;
-};
 
-// 检查是否可以隐藏/显示评论
-const canHideComment = (comment: CommentFullInfoVO) => {
-  const currentUser = useUserInfo().value;
-  // 只有有修改权限的用户可以隐藏评论
-  return hasModifyPermission.value;
-};
 
 // 获取问题详情
 const fetchIssueDetails = async () => {
@@ -324,10 +281,10 @@ const fetchIssueDetails = async () => {
     await fetchSubIssues();
     
     // 检查修改权限
-    await checkModifyPermission();
+    await checkModifyActivityPermission();
     
-    // 检查评论权限
-    await checkCommentPermission();
+    // 检查评论创建权限
+    await checkAttachCommentPermission();
   } catch (error) {
     tryThrowAndShowError(error, '获取问题详情失败');
   } finally {
@@ -393,29 +350,22 @@ const fetchSubIssues = async () => {
 // 创建子问题
 const handleCreateSubIssue = async () => {
   if (!issue.value || !subIssueForm.title.trim()) return;
-  
-  try {
-    await createSubIssue({
-      title: subIssueForm.title,
-      description: subIssueForm.description,
-      repositoryId: issue.value.repositoryId,
-      parentId: issue.value.id
+  await createSubIssue({
+    title: subIssueForm.title,
+    description: subIssueForm.description,
+    repositoryId: issue.value.repositoryId,
+    parentId: issue.value.id
+  })
+    .then(() => {
+      Message.success({ content: '子问题创建成功' });
+      createSubIssueModalVisible.value = false;
+      subIssueForm.title = '';
+      subIssueForm.description = '';
+      return fetchSubIssues();
+    })
+    .catch(error => {
+      Message.error({ content: error.data.message });
     });
-    
-    Message.success('子问题创建成功');
-    createSubIssueModalVisible.value = false;
-    subIssueForm.title = '';
-    subIssueForm.description = '';
-    
-    // 重新获取子问题列表
-    await fetchSubIssues();
-  } catch (error: any) {
-    if (error.data?.code === 7) {
-      showPermissionError('您没有权限创建子问题');
-    } else {
-      tryThrowAndShowError(error, '创建子问题失败');
-    }
-  }
 };
 
 // 打开添加子问题模态框
@@ -528,27 +478,19 @@ const startEdit = () => {
 // 保存编辑
 const saveEdit = async () => {
   if (!issue.value) return;
-  
-  try {
-    await updateActivityContent({
-      id: issue.value.id,
-      title: editForm.title,
-      description: editForm.content
+  await updateActivityContent({
+    id: issue.value.id,
+    title: editForm.title,
+    description: editForm.content
+  })
+    .then(() => {
+      Message.success({ content: '更新成功' });
+      isEditing.value = false;
+      return fetchIssueDetails();
+    })
+    .catch(error => {
+      Message.error({ content: error.data.message });
     });
-    
-    Message.success('更新成功');
-    isEditing.value = false;
-    
-    // 重新获取问题详情以确保显示最新数据
-    await fetchIssueDetails();
-  } catch (error: any) {
-    // 检查是否是权限错误
-    if (error.data?.code === 7) {
-      showPermissionError('您没有权限编辑此问题');
-    } else {
-      tryThrowAndShowError(error, '更新失败');
-    }
-  }
 };
 
 // 取消编辑
@@ -559,89 +501,53 @@ const cancelEdit = () => {
 // 切换锁定状态
 const toggleLocked = async () => {
   if (!issue.value) return;
-  try {
-    // 修正锁定状态判断逻辑
-    const isCurrentlyLocked = !!(issue.value.gmtLocked && issue.value.gmtLocked !== 'null');
-    await updateActivityLockedState(issue.value.id, !isCurrentlyLocked);
-    Message.success(isCurrentlyLocked ? '已解锁' : '已锁定');
-    await fetchIssueDetails();
-    // 重新检查评论权限
-    await checkCommentPermission();
-  } catch (error: any) {
-    // 检查是否是权限错误
-    if (error.data?.code === 7) {
-      showPermissionError('您没有权限执行此操作');
-    } else {
-      tryThrowAndShowError(error, '操作失败');
-    }
-  }
+  const isCurrentlyLocked = !!(issue.value.gmtLocked && issue.value.gmtLocked !== 'null');
+  await updateActivityLockedState(issue.value.id, !isCurrentlyLocked)
+    .then(() => {
+      Message.success({ content: isCurrentlyLocked ? '已解锁' : '已锁定' });
+      return fetchIssueDetails();
+    })
+    .then(() => checkAttachCommentPermission())
+    .catch(error => {
+      Message.error({ content: error.data.message });
+    });
 };
 
 // 切换关闭状态
 const toggleClosed = async () => {
   if (!issue.value) return;
-  
-  try {
-    // 根据gmtClosed是否有值来判断当前状态
-    const isCurrentlyClosed = !!(issue.value.gmtClosed && issue.value.gmtClosed !== 'null');
-    console.log('当前状态:', isCurrentlyClosed ? '已关闭' : '开放', 'gmtClosed:', issue.value.gmtClosed);
-    
-    // 发送相反的状态
-    await updateActivityClosedState(issue.value.id, !isCurrentlyClosed);
-    Message.success(isCurrentlyClosed ? '已重新打开' : '已关闭');
-    
-    // 强制刷新数据，添加延迟确保后端处理完成
-    setTimeout(async () => {
-      await fetchIssueDetails();
-      console.log('刷新后状态:', !!(issue.value?.gmtClosed && issue.value?.gmtClosed !== 'null') ? '已关闭' : '开放', 'gmtClosed:', issue.value?.gmtClosed);
-      
-      // 强制触发响应式更新
-      if (issue.value) {
-        const temp = { ...issue.value };
-        issue.value = temp;
-      }
-      
-      // 重新检查评论权限
-      await checkCommentPermission();
-    },500);
-  } catch (error: any) {
-    // 检查是否是权限错误
-    if (error.data?.code === 7) {
-      showPermissionError('您没有权限执行此操作');
-    } else {
-      tryThrowAndShowError(error, '操作失败');
-    }
-  }
+  const isCurrentlyClosed = !!(issue.value.gmtClosed && issue.value.gmtClosed !== 'null');
+  await updateActivityClosedState(issue.value.id, !isCurrentlyClosed)
+    .then(() => {
+      Message.success({ content: isCurrentlyClosed ? '已重新打开' : '已关闭' });
+      setTimeout(() => {
+        fetchIssueDetails().then(() => checkAttachCommentPermission());
+      }, 500);
+    })
+    .catch(error => {
+      Message.error({ content: error.data.message });
+    });
 };
 
 // 添加评论
 const addComment = async () => {
   if (!issue.value || !newComment.value.trim()) return;
-  
-  if (!hasCommentPermission.value) {
-    Message.error('您没有权限添加评论');
+    if (!hasAttachCommentPermission.value) {
+    Message.error({ content: '您没有权限添加评论' });
     return;
   }
-  
-  try {
-    await createComment({
-      content: newComment.value,
-      activityId: issue.value.id
+  await createComment({
+    content: newComment.value,
+    activityId: issue.value.id
+  })
+    .then(() => {
+      Message.success({ content: '评论成功' });
+      newComment.value = '';
+      return fetchComments();
+    })
+    .catch(error => {
+      Message.error({ content: error.data.message });
     });
-    
-    Message.success('评论成功');
-    newComment.value = '';
-    await fetchComments();
-  } catch (error: any) {
-    // 检查是否是权限错误
-    if (error.data?.code === 7) {
-      Message.error('您没有权限添加评论');
-      // 重新检查评论权限
-      await checkCommentPermission();
-    } else {
-      tryThrowAndShowError(error, '评论失败');
-    }
-  }
 };
 
 // 标签相关方法
@@ -656,34 +562,25 @@ const closeLabelModal = () => {
 
 const addLabelToIssue = async (labelId: string) => {
   if (!issue.value) return;
-  
-  try {
-    await addLabel(issue.value.id, String(labelId));
-    Message.success('标签添加成功');
-    await fetchIssueDetails();
-  } catch (error: any) {
-    // 检查是否是权限错误
-    if (error.data?.code === 7) {
-      showPermissionError('您没有权限添加标签');
-    } else {
-      tryThrowAndShowError(error, '添加标签失败');
-    }
-  }
+  await addLabel(issue.value.id, String(labelId))
+    .then(() => {
+      Message.success({ content: '标签添加成功' });
+      return fetchIssueDetails();
+    })
+    .catch(error => {
+      Message.error({ content: error.data.message });
+    });
 };
 
 const removeLabelFromIssue = async (activityAssignLabelId: string) => {
-  try {
-    await removeLabel(String(activityAssignLabelId));
-    Message.success('标签移除成功');
-    await fetchIssueDetails();
-  } catch (error: any) {
-    // 检查是否是权限错误
-    if (error.data?.code === 7) {
-      showPermissionError('您没有权限移除标签');
-    } else {
-      tryThrowAndShowError(error, '移除标签失败');
-    }
-  }
+  await removeLabel(String(activityAssignLabelId))
+    .then(() => {
+      Message.success({ content: '标签移除成功' });
+      return fetchIssueDetails();
+    })
+    .catch(error => {
+      Message.error({ content: error.data.message });
+    });
 };
 
 // 跳转到标签管理页面
@@ -706,34 +603,25 @@ const closeAssigneeModal = () => {
 
 const addAssigneeToIssue = async (assigneeId: string) => {
   if (!issue.value) return;
-  
-  try {
-    await addAssignee(issue.value.id, assigneeId);
-    Message.success('负责人添加成功');
-    await fetchIssueDetails();
-  } catch (error: any) {
-    // 检查是否是权限错误
-    if (error.data?.code === 7) {
-      showPermissionError('您没有权限添加负责人');
-    } else {
-      tryThrowAndShowError(error, '添加负责人失败');
-    }
-  }
+  await addAssignee(issue.value.id, assigneeId)
+    .then(() => {
+      Message.success({ content: '负责人添加成功' });
+      return fetchIssueDetails();
+    })
+    .catch(error => {
+      Message.error({ content: error.data.message });
+    });
 };
 
 const removeAssigneeFromIssue = async (assigneeId: string) => {
-  try {
-    await removeAssignee(assigneeId);
-    Message.success('负责人移除成功');
-    await fetchIssueDetails();
-  } catch (error: any) {
-    // 检查是否是权限错误
-    if (error.data?.code === 7) {
-      showPermissionError('您没有权限移除负责人');
-    } else {
-      tryThrowAndShowError(error, '移除负责人失败');
-    }
-  }
+  await removeAssignee(assigneeId)
+    .then(() => {
+      Message.success({ content: '负责人移除成功' });
+      return fetchIssueDetails();
+    })
+    .catch(error => {
+      Message.error({ content: error.data.message });
+    });
 };
 
 // 检查标签是否已添加
@@ -794,30 +682,22 @@ const copyIssueUrl = async () => {
 
 // 切换评论隐藏状态
 const toggleCommentHidden = async (commentId: string) => {
-  try {
-    const comment = comments.value.find(c => c.id === commentId);
-    if (!comment) return;
-    
-    // 检查权限
-    if (!canHideComment(comment)) {
-      Message.error('您没有权限修改此评论状态');
-      return;
-    }
-    
-    const isCurrentlyHidden = !!(comment.gmtHidden && comment.gmtHidden !== 'null');
-    
-    await updateCommentHiddenState(commentId, !isCurrentlyHidden);
-    Message.success(isCurrentlyHidden ? '评论已显示' : '评论已隐藏');
-    
-    // 重新获取评论列表
-    await fetchComments();
-  } catch (error: any) {
-    if (error.data?.code === 7) {
-      Message.error('您没有权限修改此评论状态');
-    } else {
-      tryThrowAndShowError(error, '修改评论状态失败');
-    }
+  const hasPermission = await checkCommentModifyPermission(commentId);
+  if (!hasPermission) {
+    Message.error({ content: '您没有权限修改此评论状态' });
+    return;
   }
+  const comment = comments.value.find(c => c.id === commentId);
+  if (!comment) return;
+  const isCurrentlyHidden = !!(comment.gmtHidden && comment.gmtHidden !== 'null');
+  await updateCommentHiddenState(commentId, !isCurrentlyHidden)
+    .then(() => {
+      Message.success({ content: isCurrentlyHidden ? '评论已显示' : '评论已隐藏' });
+      return fetchComments();
+    })
+    .catch(error => {
+      Message.error({ content: error.data.message });
+    });
 };
 
 // 检查评论是否隐藏
@@ -873,7 +753,7 @@ onMounted(async () => {
             
             <div class="issue-actions">
               <a-space>
-                <a-button v-if="!isEditing && hasModifyPermission" @click="startEdit">编辑</a-button>
+                <a-button v-if="!isEditing && hasModifyActivityPermission" @click="startEdit">编辑</a-button>
                 <a-button v-if="isEditing" type="primary" @click="saveEdit">保存</a-button>
                 <a-button v-if="isEditing" @click="cancelEdit">取消</a-button>
                 <a-button type="primary" @click="createNewIssue">
@@ -894,7 +774,14 @@ onMounted(async () => {
               <div style="display: flex; align-items: center; gap: 12px; width: 100%; background: #f1f8ff; border-radius: 6px; padding: 8px 16px;">
                 <span style="color: #24292f;">问题描述</span>
                 <span style="font-size: 13px; color: #24292f; font-weight: 500;">
-                  由 {{ issue.username }} 创建于 {{ formatTime(issue.gmtCreated) }}
+                  由
+                  <span style="cursor:pointer;color:#0969da" @click="goToUserHome(issue.creatorUsername)">{{ issue.creatorUsername }}</span>
+                  创建于 {{ formatTime(issue.gmtCreated) }}
+                  <template v-if="issue.modifierUsername && issue.gmtUpdated && issue.gmtUpdated !== issue.gmtCreated">
+                    ，由
+                    <span style="cursor:pointer;color:#0969da" @click="goToUserHome(issue.modifierUsername)">{{ issue.modifierUsername }}</span>
+                    最后编辑于 {{ formatTime(issue.gmtUpdated) }}
+                  </template>
                 </span>
               </div>
             </template>
@@ -961,7 +848,7 @@ onMounted(async () => {
                     </div>
                   </div>
                   <div class="sub-issue-actions" style="margin-left: 12px;">
-                    <a-dropdown v-if="hasModifyPermission">
+                    <a-dropdown v-if="hasModifyActivityPermission">
                       <a-button type="text" size="mini">
                         <template #icon><icon-down /></template>
                       </a-button>
@@ -980,7 +867,7 @@ onMounted(async () => {
               </div>
             </a-spin>
             
-            <div v-if="hasModifyPermission" class="sub-issues-actions">
+            <div v-if="hasModifyActivityPermission" class="sub-issues-actions">
               <a-dropdown>
                 <a-button type="primary" size="small">
                   创建子问题
@@ -1013,9 +900,8 @@ onMounted(async () => {
                 已关闭
               </span>
             </template>
-            
             <!-- 添加评论 -->
-            <div v-if="hasCommentPermission" class="add-comment">
+            <div v-if="hasAttachCommentPermission" class="add-comment">
               <a-textarea
                 v-model="newComment"
                 placeholder="添加评论..."
@@ -1025,7 +911,6 @@ onMounted(async () => {
                 添加评论
               </a-button>
             </div>
-            
             <!-- 评论权限提示 -->
             <div v-else class="comment-permission-notice">
               <a-alert
@@ -1056,41 +941,41 @@ onMounted(async () => {
                 您没有权限在此问题下添加评论
               </a-alert>
             </div>
-
             <!-- 评论列表 -->
             <div class="comments-list">
               <div v-for="comment in comments" :key="comment.id" class="comment-item" :class="{ 'comment-hidden': isCommentHidden(comment) }">
                 <div class="comment-header">
                   <div class="comment-info">
-                    <a-avatar :image-url="comment.avatarUrl" :size="24" />
-                    <a-typography-text bold class="ml-2">{{ comment.username }}</a-typography-text>
-                    <a-typography-text type="secondary" class="ml-2">
-                      {{ formatTime(comment.gmtCreated) }}
-                    </a-typography-text>
-                    <a-tag v-if="isCommentHidden(comment)" color="#cf222e" size="small" style="border-radius: 12px; font-weight: 500; padding: 2px 8px; border: none; color: #ffffff;">
-                      <template #icon><icon-eye-invisible /></template>
-                      已隐藏
-                    </a-tag>
-                  </div>
+                  <span class="ml-2" style="font-weight:bold;cursor:pointer;color:#0969da" @click="goToUserHome(comment.creatorUsername)">{{ comment.creatorUsername }}</span>
+                  <a-typography-text type="secondary" class="ml-2">
+                    {{ formatTime(comment.gmtCreated) }}
+                    <template v-if="comment.modifierUsername && comment.gmtUpdated && comment.gmtUpdated !== comment.gmtCreated">
+                      （由
+                      <span style="cursor:pointer;color:#0969da" @click="goToUserHome(comment.modifierUsername)">{{ comment.modifierUsername }}</span>
+                      最后编辑于 {{ formatTime(comment.gmtUpdated) }}）
+                    </template>
+                  </a-typography-text>
+                  <a-tag v-if="isCommentHidden(comment)" color="#cf222e" size="small" style="border-radius: 12px; font-weight: 500; padding: 2px 8px; border: none; color: #ffffff;">
+                    <template #icon><icon-eye-invisible /></template>
+                    已隐藏
+                  </a-tag>
+                </div>
                   <div class="comment-actions">
                     <a-space>
-                      <!-- 隐藏/显示按钮 -->
-                      <a-button v-if="canHideComment(comment)" type="text" size="small" @click="toggleCommentHidden(comment.id)" :style="{ color: isCommentHidden(comment) ? '#1a7f37' : '#cf222e' }">
+                      <a-button type="text" size="small" @click="toggleCommentHidden(comment.id)" :style="{ color: isCommentHidden(comment) ? '#1a7f37' : '#cf222e' }">
                         <template #icon>
                           <icon-eye v-if="isCommentHidden(comment)" />
                           <icon-eye-invisible v-else />
                         </template>
                         {{ isCommentHidden(comment) ? '显示' : '隐藏' }}
                       </a-button>
-                      
-                      <!-- 编辑/删除按钮 -->
-                      <a-button v-if="canModifyComment(comment) && editingCommentId === comment.id" type="primary" size="small" @click="saveCommentEdit">保存</a-button>
-                      <a-button v-if="canModifyComment(comment) && editingCommentId === comment.id" size="small" @click="cancelCommentEdit">取消</a-button>
-                      <a-button v-if="canModifyComment(comment) && editingCommentId === comment.id" type="text" size="small" @click="deleteCommentById(comment.id)" style="color: #f53f3f;">
+                      <a-button v-if="editingCommentId === comment.id" type="primary" size="small" @click="saveCommentEdit">保存</a-button>
+                      <a-button v-if="editingCommentId === comment.id" size="small" @click="cancelCommentEdit">取消</a-button>
+                      <a-button type="text" size="small" @click="deleteCommentById(comment.id)" style="color: #f53f3f;">
                         <template #icon><icon-delete /></template>
                         删除
                       </a-button>
-                      <a-button v-if="canModifyComment(comment) && editingCommentId !== comment.id" type="text" size="small" @click="startEditComment(comment)">
+                      <a-button v-if="editingCommentId !== comment.id" type="text" size="small" @click="startEditComment(comment)">
                         <template #icon><icon-edit /></template>
                         编辑
                       </a-button>
@@ -1107,7 +992,9 @@ onMounted(async () => {
                       placeholder="编辑评论内容..."
                     />
                   </div>
-                  <a-typography-paragraph v-else>{{ comment.content }}</a-typography-paragraph>
+                  <a-typography-paragraph v-else>
+                    {{ comment.content }}
+                  </a-typography-paragraph>
                 </div>
                 <div v-else-if="isCommentHidden(comment)" class="comment-hidden-placeholder">
                   <a-typography-text type="secondary" style="font-style: italic;">
@@ -1126,7 +1013,7 @@ onMounted(async () => {
           <div class="sidebar-section">
             <div class="section-header">
               <a-typography-text bold style="font-weight: 700;">标签</a-typography-text>
-              <a-button v-if="hasModifyPermission" type="text" size="mini" @click="openLabelModal">
+              <a-button v-if="hasModifyActivityPermission" type="text" size="mini" @click="openLabelModal">
                 <template #icon><icon-plus /></template>
               </a-button>
             </div>
@@ -1153,7 +1040,7 @@ onMounted(async () => {
           <div class="sidebar-section">
             <div class="section-header">
               <a-typography-text bold style="font-weight: 700;">负责人</a-typography-text>
-              <a-button v-if="hasModifyPermission" type="text" size="mini" @click="openAssigneeModal">
+              <a-button v-if="hasModifyActivityPermission" type="text" size="mini" @click="openAssigneeModal">
                 <template #icon><icon-plus /></template>
               </a-button>
             </div>
@@ -1171,7 +1058,7 @@ onMounted(async () => {
           </div>
 
           <!-- 操作 -->
-          <div class="sidebar-section" v-if="hasModifyPermission">
+          <div class="sidebar-section" v-if="hasModifyActivityPermission">
             <div class="section-header">
               <a-typography-text bold>操作</a-typography-text>
             </div>

@@ -84,7 +84,10 @@ export type ActivityFullInfoVO = {
     title: string;
     description: string;
     labels: LabelVO[];
-    username: string;
+    creatorId: string;
+    creatorUsername: string;
+    modifierId: string;
+    modifierUsername: string;
     assignees: AssigneeVO[];
     commentCnt: string;
     gmtCreated: string;
@@ -93,27 +96,13 @@ export type ActivityFullInfoVO = {
     gmtLocked: string;
 }
 
-export type CommentVO = {
-    id: string;
-    activityId: string;
-    userId: string;
-    content: string;
-    codePath?: string;
-    codeLine?: number;
-    replyToId?: string;
-    gmtCreated: string;
-    gmtUpdated: string;
-    gmtResolved?: string;
-    gmtHidden?: string;
-}
-
 export type CommentFullInfoVO = {
     id: string;
     activityId: string;
-    userId: string;
-    username: string;
-    email: string;
-    avatarUrl: string;
+    creatorId: string;
+    creatorUsername: string;
+    modifierId: string;
+    modifierUsername: string;
     content: string;
     codePath?: string;
     codeLine?: number;

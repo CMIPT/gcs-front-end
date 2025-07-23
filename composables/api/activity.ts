@@ -1,6 +1,5 @@
 import type { 
-  ActivityFullInfoVO, 
-  CommentVO, 
+  ActivityFullInfoVO,  
   CommentFullInfoVO, 
   ActivityAssignLabelVO, 
   AssigneeVO, 
@@ -332,9 +331,21 @@ export const useActivityApi = () => {
   // 检查Activity操作权限
   const checkActivityOperationValidity = async (params: {
     id: string
-    operationType: 'MODIFY' | 'READ' | 'COMMENT'
+    operationType: 'MODIFY_ACTIVITY' | 'MODIFY_COMMENT' | 'READ' | 'ATTACH_ACTIVITY'|'ATTACH_COMMENT'
   }) => {
     const apiURL = new URL(APIPaths.ACTIVITY_CHECK_OPERATION_VALIDITY_API_PATH, window.origin)
+    apiURL.searchParams.append('id', params.id)
+    apiURL.searchParams.append('operationType', params.operationType)
+    
+    return await fetchWithRetry(apiURL.toString())
+  }
+
+  // 检查评论操作权限
+  const checkCommentOperationValidity = async (params: {
+    id: string
+    operationType: 'MODIFY_COMMENT' | 'READ' | 'ATTACH_COMMENT'
+  }) => {
+    const apiURL = new URL(APIPaths.ACTIVITY_CHECK_COMMENT_OPERATION_VALIDITY_API_PATH, window.origin)
     apiURL.searchParams.append('id', params.id)
     apiURL.searchParams.append('operationType', params.operationType)
     
@@ -365,6 +376,7 @@ export const useActivityApi = () => {
     addAssignee,
     removeAssignee,
     pageActivityAssignees,
-    checkActivityOperationValidity
+    checkActivityOperationValidity,
+    checkCommentOperationValidity
   }
 } 

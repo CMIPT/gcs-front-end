@@ -286,8 +286,9 @@
             </div>
             
             <!-- 元信息 -->
-            <div class="issue-meta-row">                           <span class="issue-meta">
-                #{{ item.number }} · {{ item.username }} 创建于 {{ formatDate(item.gmtCreated) }}
+            <div class="issue-meta-row">
+               <span class="issue-meta">
+                #{{ item.number }} · {{ item.creatorUsername }} 创建于 {{ formatDate(item.gmtCreated) }}
               </span>
               <!-- 可以添加更多元信息，如assignees等 -->
             </div>
@@ -339,7 +340,7 @@ const { pageActivities, pageSubIssues } = useActivityApi()
 const { getLabels } = useLabelApi()
 
 const repository = ref<RepositoryDetailVO>()
-const issues = ref<any[]>([])
+const issues = ref<ActivityFullInfoVO[]>([])
 const loading = ref(false)
 const currentPage = ref(1)
 const pageSize = ref(10)
