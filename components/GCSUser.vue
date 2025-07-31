@@ -1,6 +1,7 @@
 <script setup lang="ts">
 const userInfo = useUserInfo();
 </script>
+
 <template>
   <a-space v-if="userInfo.id">
     <NuxtLink to="/new">

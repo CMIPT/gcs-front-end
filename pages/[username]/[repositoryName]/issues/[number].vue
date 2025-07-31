@@ -90,10 +90,7 @@ const hasModifyActivityPermission = ref(false);
 const hasAttachCommentPermission = ref(false); // 新增
 const permissionLoading = ref(false);
 
-const goToUserHome = (username: string) => {
-  if (!username) return;
-  router.push({ path: `/${username}` });
-};
+// 用户信息相关方法已移至GCSUser组件中
 // 获取仓库信息
 const fetchRepositoryDetails = async () => {
   const apiURL = new URL(APIPaths.REPOSITORY_GET_REPOSITORY_API_PATH, window.origin);
@@ -773,16 +770,16 @@ onMounted(async () => {
             <template #title>
               <div style="display: flex; align-items: center; gap: 12px; width: 100%; background: #f1f8ff; border-radius: 6px; padding: 8px 16px;">
                 <span style="color: #24292f;">问题描述</span>
-                <span style="font-size: 13px; color: #24292f; font-weight: 500;">
-                  由
-                  <span style="cursor:pointer;color:#0969da" @click="goToUserHome(issue.creatorUsername)">{{ issue.creatorUsername }}</span>
-                  创建于 {{ formatTime(issue.gmtCreated) }}
-                  <template v-if="issue.modifierUsername && issue.gmtUpdated && issue.gmtUpdated !== issue.gmtCreated">
-                    ，由
-                    <span style="cursor:pointer;color:#0969da" @click="goToUserHome(issue.modifierUsername)">{{ issue.modifierUsername }}</span>
-                    最后编辑于 {{ formatTime(issue.gmtUpdated) }}
+                <div style="font-size: 13px; color: #24292f; font-weight: 500; display: flex; align-items: center; gap: 4px; flex-wrap: wrap;">
+                  <span>由</span>
+                  <GCSUserCard :user="issue.creator" />
+                  <span>创建于 {{ formatTime(issue.gmtCreated) }}</span>
+                  <template v-if="issue.modifier && issue.gmtUpdated && issue.gmtUpdated !== issue.gmtCreated">
+                    <span>，由</span>
+                    <GCSUserCard :user="issue.modifier" />
+                    <span>最后编辑于 {{ formatTime(issue.gmtUpdated) }}</span>
                   </template>
-                </span>
+                </div>
               </div>
             </template>
             <div v-if="!isEditing" class="issue-content">
@@ -945,13 +942,13 @@ onMounted(async () => {
             <div class="comments-list">
               <div v-for="comment in comments" :key="comment.id" class="comment-item" :class="{ 'comment-hidden': isCommentHidden(comment) }">
                 <div class="comment-header">
-                  <div class="comment-info">
-                  <span class="ml-2" style="font-weight:bold;cursor:pointer;color:#0969da" @click="goToUserHome(comment.creatorUsername)">{{ comment.creatorUsername }}</span>
-                  <a-typography-text type="secondary" class="ml-2">
+                  <div class="comment-info" style="display: flex; align-items: center; gap: 4px; flex-wrap: wrap;">
+                  <GCSUserCard :user="comment.creator" />
+                  <a-typography-text type="secondary">
                     {{ formatTime(comment.gmtCreated) }}
-                    <template v-if="comment.modifierUsername && comment.gmtUpdated && comment.gmtUpdated !== comment.gmtCreated">
+                    <template v-if="comment.modifier && comment.gmtUpdated && comment.gmtUpdated !== comment.gmtCreated">
                       （由
-                      <span style="cursor:pointer;color:#0969da" @click="goToUserHome(comment.modifierUsername)">{{ comment.modifierUsername }}</span>
+                      <GCSUserCard :user="comment.modifier" />
                       最后编辑于 {{ formatTime(comment.gmtUpdated) }}）
                     </template>
                   </a-typography-text>
@@ -1047,8 +1044,7 @@ onMounted(async () => {
             <div class="assignees-list">
               <template v-if="issue.assignees && issue.assignees.length > 0">
                 <div v-for="assignee in issue.assignees" :key="assignee.id" class="assignee-item">
-                  <a-avatar :image-url="assignee.avatarUrl" :size="24" />
-                  <a-typography-text class="ml-2">{{ assignee.username }}</a-typography-text>
+                  <GCSUserCard :user="{ id: assignee.assigneeId, username: assignee.username, email: assignee.email, avatarUrl: assignee.avatarUrl }" />
                 </div>
               </template>
               <template v-else>

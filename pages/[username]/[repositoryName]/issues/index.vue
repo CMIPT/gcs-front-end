@@ -287,9 +287,11 @@
             
             <!-- 元信息 -->
             <div class="issue-meta-row">
-               <span class="issue-meta">
-                #{{ item.number }} · {{ item.creatorUsername }} 创建于 {{ formatDate(item.gmtCreated) }}
-              </span>
+               <div class="issue-meta" style="display: flex; align-items: center; gap: 4px; flex-wrap: wrap;">
+                <span>#{{ item.number }} ·</span>
+                <GCSUserCard :user="item.creator" />
+                <span>创建于 {{ formatDate(item.gmtCreated) }}</span>
+              </div>
               <!-- 可以添加更多元信息，如assignees等 -->
             </div>
           </div>

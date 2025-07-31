@@ -84,10 +84,8 @@ export type ActivityFullInfoVO = {
     title: string;
     description: string;
     labels: LabelVO[];
-    creatorId: string;
-    creatorUsername: string;
-    modifierId: string;
-    modifierUsername: string;
+    creator: UserVO;
+    modifier: UserVO;
     assignees: AssigneeVO[];
     commentCnt: string;
     gmtCreated: string;
@@ -99,10 +97,8 @@ export type ActivityFullInfoVO = {
 export type CommentFullInfoVO = {
     id: string;
     activityId: string;
-    creatorId: string;
-    creatorUsername: string;
-    modifierId: string;
-    modifierUsername: string;
+    creator: UserVO;
+    modifier: UserVO;
     content: string;
     codePath?: string;
     codeLine?: number;
